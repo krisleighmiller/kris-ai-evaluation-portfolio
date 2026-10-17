@@ -4,6 +4,8 @@ I design controlled experiments to investigate how selected AI models perform on
 
 You receive an evidence-backed report of tested capabilities, failure patterns, costs, and limitations—not a guarantee of production performance.
 
+Considering an engagement? Read [AI Evaluation Services](SERVICES.md) for client inputs, questions I can investigate, written deliverables, communication terms, and scope boundaries.
+
 ## What this portfolio demonstrates
 
 | Project | Consulting capability it demonstrates |
@@ -54,6 +56,7 @@ This repository does not distribute Harbor, OpenCode, API credentials, provider 
 
 ## Documentation
 
+- [AI evaluation services and client boundaries](SERVICES.md)
 - [Evaluation methodology](docs/evaluation-methodology.md)
 - [Evidence and claim policy](docs/evidence-and-claim-policy.md)
 - [Model, provider, cost, and runtime notes](docs/model-and-provider-notes.md)
