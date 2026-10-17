@@ -1,0 +1,164 @@
+{
+    "reportFormat": "CTRF",
+    "specVersion": "0.0.0",
+    "timestamp": "2026-10-15T01:49:59.795323+00:00",
+    "generatedBy": "pytest",
+    "results": {
+        "tool": {
+            "name": "pytest",
+            "version": "9.1.1"
+        },
+        "summary": {
+            "tests": 15,
+            "passed": 15,
+            "failed": 0,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0,
+            "start": 1792028967859,
+            "stop": 1792028999795
+        },
+        "environment": {
+            "buildName": "Pytest JSON CTRF Report",
+            "buildNumber": "000",
+            "buildUrl": "https://ctrf.io"
+        },
+        "tests": [
+            {
+                "name": "test_outputs.py::test_deliverable_exists",
+                "status": "passed",
+                "duration": 1,
+                "start": 1792028968100,
+                "stop": 1792028968101,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_inputs_unmodified",
+                "status": "passed",
+                "duration": 15,
+                "start": 1792028968101,
+                "stop": 1792028968116,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_stream_properties",
+                "status": "passed",
+                "duration": 53,
+                "start": 1792028968116,
+                "stop": 1792028968169,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_cfr_and_duration",
+                "status": "passed",
+                "duration": 1693,
+                "start": 1792028968169,
+                "stop": 1792028969862,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_keyframe_interval",
+                "status": "passed",
+                "duration": 3400,
+                "start": 1792028969863,
+                "stop": 1792028973263,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_limited_range_levels",
+                "status": "passed",
+                "duration": 1611,
+                "start": 1792028973263,
+                "stop": 1792028974874,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_patch_colorimetry",
+                "status": "passed",
+                "duration": 6469,
+                "start": 1792028974874,
+                "stop": 1792028981343,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_segment_content_and_cuts",
+                "status": "passed",
+                "duration": 4068,
+                "start": 1792028981343,
+                "stop": 1792028985411,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_padding",
+                "status": "passed",
+                "duration": 1599,
+                "start": 1792028985411,
+                "stop": 1792028987010,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_av_sync",
+                "status": "passed",
+                "duration": 8157,
+                "start": 1792028987011,
+                "stop": 1792028995168,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_no_synthesized_frames",
+                "status": "passed",
+                "duration": 1,
+                "start": 1792028995168,
+                "stop": 1792028995169,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_beep_spacing",
+                "status": "passed",
+                "duration": 0,
+                "start": 1792028995169,
+                "stop": 1792028995169,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_segment_audio_provenance",
+                "status": "passed",
+                "duration": 401,
+                "start": 1792028995169,
+                "stop": 1792028995570,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_program_loudness",
+                "status": "passed",
+                "duration": 1925,
+                "start": 1792028995570,
+                "stop": 1792028997495,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_segment_loudness",
+                "status": "passed",
+                "duration": 2300,
+                "start": 1792028997495,
+                "stop": 1792028999795,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            }
+        ]
+    }
+}

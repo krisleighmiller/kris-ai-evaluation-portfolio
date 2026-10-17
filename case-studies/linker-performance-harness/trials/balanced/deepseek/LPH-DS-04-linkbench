@@ -1,0 +1,245 @@
+#!/usr/bin/env python3
+import json
+import os
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+
+THREAD_CONFIGS = {
+    "bfd": [],
+    "gold": ["-Wl,--threads", "-Wl,--thread-count=2"],
+    "lld": ["-Wl,--threads=2"],
+    "mold": ["-Wl,--threads=2", "-Wl,--no-fork"],
+}
+
+EFFECTIVE_THREADS = {"bfd": 1, "gold": 2, "lld": 2, "mold": 2}
+
+LINKER_IDS = ["bfd", "gold", "lld", "mold"]
+
+
+def find_linker_in_strace(strace_file):
+    candidates = []
+    with open(strace_file, errors="replace") as f:
+        for line in f:
+            m = re.search(r'execve\("([^"]+)"', line)
+            if not m:
+                continue
+            path = m.group(1)
+            bn = os.path.basename(path)
+            if bn in ("cc1", "cc1plus", "as", "gcc", "g++", "collect2"):
+                continue
+            if "ld-linux" in bn or bn.endswith(".so") or "linux" in bn.lower():
+                continue
+            if "ld" in bn.lower() or "mold" in bn.lower():
+                candidates.append(path)
+    return candidates[-1] if candidates else None
+
+
+def classify_linker(path):
+    try:
+        r = subprocess.run(
+            [path, "--version"], capture_output=True, text=True, timeout=30
+        )
+        lines = [l for l in r.stdout.splitlines() if l.strip()]
+        if not lines:
+            return None, ""
+        first = lines[0].strip()
+    except Exception:
+        return None, ""
+    lower = first.lower()
+    if "mold" in lower:
+        return "mold", first
+    if "gnu gold" in lower:
+        return "gold", first
+    if "lld" in lower:
+        return "lld", first
+    if "gnu ld" in lower:
+        return "bfd", first
+    return None, first
+
+
+def check_output_regular(path):
+    try:
+        s = os.lstat(path)
+        return stat.S_ISREG(s.st_mode)
+    except Exception:
+        return False
+
+
+def run_probe(probe_cfg, out_path):
+    argv = []
+    for a in probe_cfg["argv"]:
+        argv.append(out_path if a == "{output}" else a)
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=30)
+    except Exception:
+        return False
+    if r.returncode != probe_cfg["expected_returncode"]:
+        return False
+    if r.stdout != probe_cfg["expected_stdout"]:
+        return False
+    if r.stderr != probe_cfg["expected_stderr"]:
+        return False
+    return True
+
+
+def die(tmpdir):
+    if tmpdir and os.path.isdir(tmpdir):
+        shutil.rmtree(tmpdir, ignore_errors=True)
+    sys.exit(1)
+
+
+def main():
+    if len(sys.argv) != 3:
+        print(
+            f"Usage: {sys.argv[0]} <workload-directory> <report-json>",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    work_dir = sys.argv[1]
+    report_path = sys.argv[2]
+
+    if os.path.exists(report_path):
+        os.remove(report_path)
+
+    manifest_path = os.path.join(work_dir, "workload.json")
+    try:
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+    except Exception:
+        die(None)
+
+    if manifest.get("schema_version") != 1:
+        die(None)
+
+    driver = manifest["driver"]
+    work_id = manifest["workload_id"]
+    rsp_path = os.path.abspath(os.path.join(work_dir, manifest["response_file"]))
+    warmup_order = manifest["warmup_order"]
+    timed_rounds = manifest["timed_rounds"]
+    probe_cfg = manifest["probe"]
+
+    for lid in LINKER_IDS:
+        if lid not in THREAD_CONFIGS:
+            die(None)
+
+    tmpdir = tempfile.mkdtemp(prefix="linkbench_")
+
+    linker_paths = {}
+    linker_versions = {}
+
+    trace_idx = [0]
+
+    def next_trace():
+        trace_idx[0] += 1
+        return os.path.join(tmpdir, f"strace_{trace_idx[0]}.txt")
+
+    def next_out():
+        trace_idx[0] += 1
+        return os.path.join(tmpdir, f"out_{trace_idx[0]}")
+
+    def do_link(lid, record_sample, strace_out_path):
+        out = next_out()
+        if os.path.exists(out):
+            os.remove(out)
+
+        args = [driver, f"-fuse-ld={lid}"] + THREAD_CONFIGS[lid]
+        args += [f"@{rsp_path}", "-o", out]
+
+        strace_args = [
+            "strace", "-f", "-e", "trace=execve", "-o", strace_out_path
+        ] + args
+
+        start = time.monotonic_ns()
+        try:
+            r = subprocess.run(
+                strace_args, capture_output=True, text=True, cwd=work_dir
+            )
+        except Exception:
+            die(tmpdir)
+        end = time.monotonic_ns()
+        duration_ns = end - start
+
+        if r.returncode != 0:
+            die(tmpdir)
+
+        if not check_output_regular(out):
+            die(tmpdir)
+
+        if not run_probe(probe_cfg, out):
+            die(tmpdir)
+
+        actual_path = find_linker_in_strace(strace_out_path)
+        if actual_path is None:
+            die(tmpdir)
+
+        if lid in linker_paths and actual_path != linker_paths[lid]:
+            die(tmpdir)
+
+        if lid not in linker_paths:
+            linker_paths[lid] = actual_path
+            cls, ver = classify_linker(actual_path)
+            if cls != lid:
+                die(tmpdir)
+            if not ver:
+                die(tmpdir)
+            linker_versions[lid] = ver
+        else:
+            cls, _ = classify_linker(actual_path)
+            if cls != lid:
+                die(tmpdir)
+
+        return duration_ns
+
+    samples = {lid: [] for lid in LINKER_IDS}
+
+    for lid in warmup_order:
+        do_link(lid, False, next_trace())
+
+    for rnd in timed_rounds:
+        for lid in rnd:
+            dur = do_link(lid, True, next_trace())
+            samples[lid].append(dur)
+
+    results = []
+    for lid in LINKER_IDS:
+        samps = samples[lid]
+        if len(samps) != 5:
+            die(tmpdir)
+        sorted_samps = sorted(samps)
+        median = sorted_samps[2]
+        results.append(
+            {
+                "linker": lid,
+                "path": linker_paths[lid],
+                "version": linker_versions[lid],
+                "effective_threads": EFFECTIVE_THREADS[lid],
+                "samples_ns": samps,
+                "median_ns": median,
+            }
+        )
+
+    results.sort(key=lambda x: x["median_ns"])
+    ranking = [r["linker"] for r in results]
+
+    report = {
+        "schema_version": 1,
+        "workload_id": work_id,
+        "results": results,
+        "ranking": ranking,
+    }
+
+    with open(report_path, "w") as f:
+        json.dump(report, f, indent=2)
+
+    shutil.rmtree(tmpdir, ignore_errors=True)
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

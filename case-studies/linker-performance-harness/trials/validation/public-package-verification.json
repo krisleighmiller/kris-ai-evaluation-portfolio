@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "verified_at": "2026-10-16T22:29:15Z",
+  "package": "case-studies/linker-performance-harness/task",
+  "harbor_version": "0.24.0",
+  "checks": {
+    "harbor_dry_run": {
+      "outcome": "passed",
+      "trials_recognized": 1
+    },
+    "clean_oracle_run": {
+      "outcome": "passed",
+      "reward": 1,
+      "tests_passed": 5,
+      "tests_failed": 0,
+      "exceptions": 0,
+      "runtime_seconds": 36,
+      "harbor_task_checksum": "4f1aa58b1b41add834bb51361870fb149b4dd32c8e5e2e709235354cbebdd587",
+      "artifact_bytes": 20453,
+      "artifact_sha256": "55b10a3eccd916a9478d2174d3de3008748ae9f4b00a901d2ffc6884b972e233",
+      "evidence": "public-package-oracle-verifier.json"
+    },
+    "harbor_lint": {
+      "outcome": "not_available",
+      "reason": "Harbor 0.24.0, the current released CLI at verification time, does not expose a lint command."
+    }
+  }
+}

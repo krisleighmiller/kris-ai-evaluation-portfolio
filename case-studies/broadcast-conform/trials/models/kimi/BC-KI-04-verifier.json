@@ -1,0 +1,170 @@
+{
+    "reportFormat": "CTRF",
+    "specVersion": "0.0.0",
+    "timestamp": "2026-10-15T00:10:35.645263+00:00",
+    "generatedBy": "pytest",
+    "results": {
+        "tool": {
+            "name": "pytest",
+            "version": "9.1.1"
+        },
+        "summary": {
+            "tests": 15,
+            "passed": 13,
+            "failed": 2,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0,
+            "start": 1792023005611,
+            "stop": 1792023035645
+        },
+        "environment": {
+            "buildName": "Pytest JSON CTRF Report",
+            "buildNumber": "000",
+            "buildUrl": "https://ctrf.io"
+        },
+        "tests": [
+            {
+                "name": "test_outputs.py::test_deliverable_exists",
+                "status": "passed",
+                "duration": 0,
+                "start": 1792023005835,
+                "stop": 1792023005835,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_inputs_unmodified",
+                "status": "passed",
+                "duration": 15,
+                "start": 1792023005835,
+                "stop": 1792023005850,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_stream_properties",
+                "status": "passed",
+                "duration": 48,
+                "start": 1792023005850,
+                "stop": 1792023005898,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_cfr_and_duration",
+                "status": "passed",
+                "duration": 1527,
+                "start": 1792023005898,
+                "stop": 1792023007425,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_keyframe_interval",
+                "status": "passed",
+                "duration": 2965,
+                "start": 1792023007425,
+                "stop": 1792023010390,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_limited_range_levels",
+                "status": "passed",
+                "duration": 1538,
+                "start": 1792023010391,
+                "stop": 1792023011929,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_patch_colorimetry",
+                "status": "passed",
+                "duration": 6058,
+                "start": 1792023011930,
+                "stop": 1792023017988,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_segment_content_and_cuts",
+                "status": "passed",
+                "duration": 3801,
+                "start": 1792023017988,
+                "stop": 1792023021789,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_padding",
+                "status": "passed",
+                "duration": 1572,
+                "start": 1792023021789,
+                "stop": 1792023023361,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_av_sync",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 7939,
+                "start": 1792023023361,
+                "stop": 1792023031300,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_av_sync():\n        \"\"\"Spec: the master must contain exactly the flash/beep events the cut\n        list places inside it, each within marker_placement_tolerance_ms of its\n        cut-list position, and every flash/beep pair must agree within\n        av_sync_tolerance_ms.\"\"\"\n        fl, bp = flashes(), beeps()\n        exp = expected_markers()\n        for what, got in ((\"white flashes\", fl), (\"beeps\", bp)):\n            missing = [f\"{t:.3f}\" for t in exp\n                       if nearest(got, t) is None\n                       or abs(nearest(got, t) - t) > MATCH_WIN]\n            assert len(got) == len(exp), (\n                f\"expected {len(exp)} {what}, detected {len(got)}\"\n                + (f\"; nothing within {MATCH_WIN * 1000:.0f} ms of master \"\n                   f\"t={', '.join(missing)}\" if missing else \"\"))\n        for t in exp:\n            f = nearest(fl, t)\n            b = nearest(bp, t)\n            assert f is not None and abs(f - t) <= MATCH_WIN, (\n                f\"no flash near master t={t} (nearest {f})\")\n>           assert b is not None and abs(b - t) <= MATCH_WIN, (\n                f\"no beep near master t={t} (nearest {b})\")\nE           AssertionError: no beep near master t=26.0 (nearest 26.36)\nE           assert (26.36 is not None and 0.35999999999999943 <= 0.045)\nE            +  where 0.35999999999999943 = abs((26.36 - 26.0))\n\ntests/test_outputs.py:345: AssertionError",
+                "message": "The test failed in the call phase due to an assertion error"
+            },
+            {
+                "name": "test_outputs.py::test_no_synthesized_frames",
+                "status": "passed",
+                "duration": 0,
+                "start": 1792023031300,
+                "stop": 1792023031300,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_beep_spacing",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 6,
+                "start": 1792023031300,
+                "stop": 1792023031306,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_beep_spacing():\n        \"\"\"Spec: spacing between consecutive beeps inside a segment must match\n        the drift-normalized spacing of those beeps in the source audio within\n        beep_interval_tolerance_ms. The reference (beep_gaps_master) was measured\n        from each source's own beep onsets at authoring time with the recorder\n        clock drift fitted out, so a faithful conform matches it near-exactly\n        while uncorrected drift misses by ~30 ms. Catches residual drift that a\n        constant offset would hide.\n    \n        The references are deliberately the source's real spacing and not the\n        nominal 5 s of the marker grid: the recordings place their beeps on a\n        ~21 ms gate grid, so consecutive source gaps genuinely run 4.992-5.014 s.\n        Copying a source's audio faithfully reproduces that; re-timing beeps onto\n        the flash grid does not, and the spec sentence asks for the former.\"\"\"\n        bp = beeps()\n        for seg in GT[\"segments\"]:\n            marks = seg[\"markers_master\"]\n            gaps_exp = seg[\"beep_gaps_master\"]\n            if len(marks) < 2:\n                continue\n            got = [nearest(bp, t) for t in marks]\n            for i, expected_gap in enumerate(gaps_exp):\n                gap = got[i + 1] - got[i]\n>               assert abs(gap - expected_gap) <= SPACING_TOL, (\n                    f\"segment {seg['index']} ({seg['source']}): beep spacing \"\n                    f\"{gap:.4f}s vs expected {expected_gap:.4f}s\")\nE               AssertionError: segment 6 (F.mp4): beep spacing 5.0440s vs expected 5.0140s\nE               assert 0.0300000000000038 <= 0.01\nE                +  where 0.0300000000000038 = abs((5.044000000000004 - 5.014))\n\ntests/test_outputs.py:414: AssertionError",
+                "message": "The test failed in the call phase due to an assertion error"
+            },
+            {
+                "name": "test_outputs.py::test_segment_audio_provenance",
+                "status": "passed",
+                "duration": 383,
+                "start": 1792023031306,
+                "stop": 1792023031689,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_program_loudness",
+                "status": "passed",
+                "duration": 1759,
+                "start": 1792023031689,
+                "stop": 1792023033448,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_segment_loudness",
+                "status": "passed",
+                "duration": 2197,
+                "start": 1792023033448,
+                "stop": 1792023035645,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            }
+        ]
+    }
+}

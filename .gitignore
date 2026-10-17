@@ -1,0 +1,43 @@
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+auth.json
+*.key
+*.pem
+
+# Agent and execution state
+.opencode/
+.harbor/
+**/xdg-data/
+jobs/
+raw/
+private/
+staging-notes/
+
+# Installed execution-platform state is outside the public boundary.
+# Harbor task-package files such as task.toml, environment/, solution/, and tests/
+# are intentionally NOT ignored; they are required to recreate a Harbor task.
+
+# Generated caches and local databases
+__pycache__/
+*.py[cod]
+.cache/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+
+# Sanitized .log files may be intentional trial evidence. Review them before adding
+# them; do not blanket-ignore the format.
+
+# Large working archives and indexes require an explicit publication decision
+*.zip
+*.tar
+*.tar.gz
+*.npz
+
+# Operating-system and editor noise
+.DS_Store
+Thumbs.db
+

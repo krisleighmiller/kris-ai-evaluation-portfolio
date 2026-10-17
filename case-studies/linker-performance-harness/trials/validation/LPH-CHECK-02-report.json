@@ -1,0 +1,55 @@
+{
+  "results": [
+    {
+      "checks": {
+        "behavior_in_task_description": {
+          "explanation": "The core protocol is explicitly specified, but the tests also require hidden native proof-of-work constraints: a minimum total wall time, a maximum reported-time bound, per-linker median magnitude bounds, and reference-relative ranking. These tested requirements are not stated in instruction.md.",
+          "outcome": "fail"
+        },
+        "behavior_in_tests": {
+          "explanation": "The verifier covers the described schedule, selectors and thread controls, monotonic timing correlation, exec-derived identity and verbatim paths, output freshness and probes, report schema and aggregation, ranking, workload immutability, and failure cleanup across native and controlled workloads.",
+          "outcome": "pass"
+        },
+        "informative_test_structure": {
+          "explanation": "The pytest cases have descriptive names and docstrings, while verify_submission.py separates report, success, and fault validation and uses named scenarios and constants for the protocol.",
+          "outcome": "pass"
+        },
+        "anti_cheating_measures": {
+          "explanation": "The runtime image omits tests and solution, hidden workloads differ from the visible workload, native links provide proof of work, and authenticated controlled tools plus isolated users and signed observer evidence resist fabricated reports and identity spoofing.",
+          "outcome": "pass"
+        },
+        "structured_data_schema": {
+          "explanation": "instruction.md gives the normative report shape with exactly four top-level keys and six result keys, and workload-format.md explicitly documents the manifest and probe fields and their constraints.",
+          "outcome": "pass"
+        },
+        "pinned_dependencies": {
+          "explanation": "Both base images are digest-pinned and the Python verifier dependencies are pinned to exact versions. The remaining dependencies are apt packages, which the criterion expressly excludes from required pinning.",
+          "outcome": "pass"
+        },
+        "typos": {
+          "explanation": "The reviewed paths, manifest keys, commands, linker IDs, control arguments, and generated tool names are consistent across the instructions, environment, solution, and tests; no failure-causing typo was found.",
+          "outcome": "pass"
+        },
+        "tests_or_solution_in_image": {
+          "explanation": "environment/Dockerfile copies the starter, workload generator documentation, and diagnostic lab, but does not copy tests/ or solution/ into the runtime image.",
+          "outcome": "pass"
+        },
+        "test_deps_in_image": {
+          "explanation": "Verifier-only packages and build dependencies such as pytest, pytest-json-ctrf, OpenSSL headers, and util-linux are installed in tests/Dockerfile; runtime dependencies are kept in the environment image.",
+          "outcome": "pass"
+        },
+        "hardcoded_solution": {
+          "explanation": "solution/linkbench.py performs tracing, process identification, version probing, output validation, timing, median calculation, and ranking from live executions rather than echoing a precomputed report.",
+          "outcome": "pass"
+        },
+        "file_reference_mentioned": {
+          "explanation": "instruction.md explicitly names the required executable /app/linkbench, its two-argument invocation including the report-json path, and the workload documentation path /app/workload/README.md.",
+          "outcome": "pass"
+        }
+      },
+      "cost_usd": 0.06732806999999999,
+      "task_name": "",
+      "error": null
+    }
+  ]
+}

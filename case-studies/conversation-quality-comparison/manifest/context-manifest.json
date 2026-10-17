@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "data_classification": "synthetic",
+  "model_visible_file_count": 15,
+  "private_run_context_aggregate_sha256": "41bfe58c56a28d58f9814d6186e24f6e5ba635b5bdaa01ad65c644840ed9ff73",
+  "public_context_note": "Semantically equivalent publication copy. EML domains and PDF metadata were sanitized; CSV contents and PDF page content were not changed.",
+  "files": [
+    {
+      "path": "context/CVAS_Chat_Quality_Standard_2026-02.pdf",
+      "bytes": 4857,
+      "sha256": "6dfae958023780ecd2aa3cf6ebc0808f906ac3bcc19e4531e35f255f57326903",
+      "media_type": "application/pdf",
+      "publication_transform": "document metadata removed; page content unchanged"
+    },
+    {
+      "path": "context/LBD_CVAS_Pilot_Agreement.pdf",
+      "bytes": 90667,
+      "sha256": "6d322afa460ca3414c86e03ca533151e942602db0b2297cc93f71e7d9905d792",
+      "media_type": "application/pdf",
+      "publication_transform": "document metadata removed; page content unchanged"
+    },
+    {
+      "path": "context/LBD_pilot_service_self_assessment.pdf",
+      "bytes": 41431,
+      "sha256": "c9dc9990cd9b1dfec17d700a5b76e4e8095b42226a8e379d9e7f59e9f418e580",
+      "media_type": "application/pdf",
+      "publication_transform": "document metadata removed; page content unchanged"
+    },
+    {
+      "path": "context/audit-sample-selection.eml",
+      "bytes": 648,
+      "sha256": "5b826f8d221f6930f4d22712a034c70a16845b6b35da1f9fdc8dc155870593c3",
+      "media_type": "message/rfc822",
+      "publication_transform": "synthetic address and Message-ID domains changed to reserved .example domains"
+    },
+    {
+      "path": "context/board-quality-question.eml",
+      "bytes": 637,
+      "sha256": "b78e4edc48ddc606d02402cbf07e10e470a211b0cd8772c1c3eb96dd89b58940",
+      "media_type": "message/rfc822",
+      "publication_transform": "synthetic address and Message-ID domains changed to reserved .example domains"
+    },
+    {
+      "path": "context/conversations.csv",
+      "bytes": 101261,
+      "sha256": "b97fb8a4db3ad9a68cd91c3a8b4e42b383777ac4cec0b2bf7b46366d4a3cb9d6",
+      "media_type": "text/csv",
+      "publication_transform": "byte-for-byte copy of the private canonical context"
+    },
+    {
+      "path": "context/family-concern.eml",
+      "bytes": 738,
+      "sha256": "cd0b477cb0e811f410424e98c56fca0bd2b76676347f1dc6e773856ba0ae33f1",
+      "media_type": "message/rfc822",
+      "publication_transform": "synthetic address and Message-ID domains changed to reserved .example domains"
+    },
+    {
+      "path": "context/member-feedback-extract.csv",
+      "bytes": 5058,
+      "sha256": "55562e091ec0e8365f22cc23679d567dd5ccfbde57a5548a2194ce19fa66c23e",
+      "media_type": "text/csv",
+      "publication_transform": "byte-for-byte copy of the private canonical context"
+    },
+    {
+      "path": "context/model-update-notice.eml",
+      "bytes": 2078,
+      "sha256": "6b3431720e5aa8d82184a02bffbec1892c0dcd7c5604dcf0bcd4ee321061a79e",
+      "media_type": "message/rfc822",
+      "publication_transform": "synthetic address and Message-ID domains changed to reserved .example domains"
+    },
+    {
+      "path": "context/peer-desk-internal-thread.eml",
+      "bytes": 1376,
+      "sha256": "5e7168e96dc56ca47f8e7d735c5f91abef6354c6f8b3a9794520fc86c0a02bef",
+      "media_type": "message/rfc822",
+      "publication_transform": "synthetic address and Message-ID domains changed to reserved .example domains"
+    },
+    {
+      "path": "context/peer-desk-queue-export.csv",
+      "bytes": 5102,
+      "sha256": "93c053536bbbfe2a2e9687b780312d5272da1afe9e3b2000dfa3c96727e5d4f7",
+      "media_type": "text/csv",
+      "publication_transform": "byte-for-byte copy of the private canonical context"
+    },
+    {
+      "path": "context/peer-followup-notes.csv",
+      "bytes": 3671,
+      "sha256": "14d5d014b58031fafc9d1cee52eb1f8717076978a11b16b345ba48a1b5bc4846",
+      "media_type": "text/csv",
+      "publication_transform": "byte-for-byte copy of the private canonical context"
+    },
+    {
+      "path": "context/pilot-operations-monthly.csv",
+      "bytes": 475,
+      "sha256": "17a9c65b864bd70e1fe037c43c3c923e6bacb15787d6db64111aaaa36ced772f",
+      "media_type": "text/csv",
+      "publication_transform": "byte-for-byte copy of the private canonical context"
+    },
+    {
+      "path": "context/renewal-review-request.eml",
+      "bytes": 904,
+      "sha256": "2830e393176d5f8c5288557c1f72381a6d4e70faaa77a5906f041252e3909ca5",
+      "media_type": "message/rfc822",
+      "publication_transform": "synthetic address and Message-ID domains changed to reserved .example domains"
+    },
+    {
+      "path": "context/safety-alert-export.csv",
+      "bytes": 781,
+      "sha256": "8d312c3beed5cea83fb68057ae3efaf6a9bcc6269918c561b6c7c33c4251670e",
+      "media_type": "text/csv",
+      "publication_transform": "byte-for-byte copy of the private canonical context"
+    }
+  ]
+}

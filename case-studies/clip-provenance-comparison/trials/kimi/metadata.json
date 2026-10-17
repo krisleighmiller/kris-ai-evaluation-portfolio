@@ -1,0 +1,15 @@
+{
+  "platform": "OpenCode",
+  "platform_version": "2.0.29",
+  "agent": "build",
+  "provider": "openrouter",
+  "model_route": "moonshotai/kimi-k3",
+  "started_utc": "2026-10-15T19:41:28Z",
+  "last_updated_utc": "2026-10-15T22:52:25Z",
+  "run_isolation": "separate instance with a byte-identical private copy of the shared context",
+  "status": "manually stopped",
+  "published_checkpoints": [
+    "round 2 refined",
+    "round 3 terminal saved checkpoint"
+  ]
+}

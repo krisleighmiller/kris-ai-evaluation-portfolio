@@ -1,0 +1,77 @@
+{
+    "reportFormat": "CTRF",
+    "specVersion": "0.0.0",
+    "timestamp": "2026-10-14T19:39:49.564856+00:00",
+    "generatedBy": "pytest",
+    "results": {
+        "tool": {
+            "name": "pytest",
+            "version": "9.1.1"
+        },
+        "summary": {
+            "tests": 5,
+            "passed": 4,
+            "failed": 1,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0,
+            "start": 1792006786207,
+            "stop": 1792006789564
+        },
+        "environment": {
+            "buildName": "Pytest JSON CTRF Report",
+            "buildNumber": "000",
+            "buildUrl": "https://ctrf.io"
+        },
+        "tests": [
+            {
+                "name": "test_outputs.py::test_artifact_is_self_contained_executable",
+                "status": "passed",
+                "duration": 1,
+                "start": 1792006786233,
+                "stop": 1792006786234,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_tracing_runtime_works_for_ordinary_user",
+                "status": "passed",
+                "duration": 25,
+                "start": 1792006786234,
+                "stop": 1792006786259,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_hidden_native_workload",
+                "status": "passed",
+                "duration": 2654,
+                "start": 1792006786259,
+                "stop": 1792006788913,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_authenticated_controlled_protocol",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 423,
+                "start": 1792006788913,
+                "stop": 1792006789336,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_authenticated_controlled_protocol():\n        \"\"\"Signed controlled runs enforce order, identity, timing, probes and failure cleanup.\"\"\"\n        tool_dir = Path(\"/opt/control/bin\")\n        for name in (\n            \"ld.bfd\",\n            \"ld.bfd-alt\",\n            \"ld.gold\",\n            \"ld.gold-alt\",\n            \"ld.gold-helper\",\n            \"ld.gold-spoof\",\n            \"ld.lld\",\n            \"ld.lld-alt\",\n            \"ld.lld2\",\n            \"ld.mold\",\n            \"ld.mold-alt\",\n        ):\n            invoked_path = tool_dir / name\n            assert invoked_path.is_symlink()\n            assert invoked_path.resolve() != invoked_path\n        result = run_isolated(\n            [\n                \"python3\",\n                \"/tests/verify_submission.py\",\n                \"--artifact\",\n                str(ARTIFACT),\n                \"--workload\",\n                \"/opt/workloads/controlled\",\n                \"--tool-dir\",\n                str(tool_dir),\n                \"--observer\",\n                \"/tests/observer.py\",\n            ],\n            cwd=\"/tmp\",\n            env={\n                \"HOME\": \"/tmp\",\n                \"LANG\": \"C\",\n                \"LC_ALL\": \"C\",\n                \"PATH\": \"/opt/verifier-venv/bin:/usr/bin:/bin\",\n                \"TMPDIR\": \"/tmp\",\n            },\n            timeout=120,\n            reap_uid=1001,\n        )\n>       assert result.returncode == 0, (\n            f\"stdout:\\n{result.stdout}\\nstderr:\\n{result.stderr}\"\n        )\nE       AssertionError: stdout:\nE         \nE         stderr:\nE         Traceback (most recent call last):\nE           File \"/tests/verify_submission.py\", line 442, in <module>\nE             main()\nE           File \"/tests/verify_submission.py\", line 437, in main\nE             run_scenario(args, scenario)\nE           File \"/tests/verify_submission.py\", line 393, in run_scenario\nE             raise VerificationError(\nE         VerificationError: success exited 1: linkbench: unreadable or truncated trace string: 0x7f70c137e38f\nE         \nE         \nE       assert 1 == 0\nE        +  where 1 = CompletedProcess(args=['python3', '/tests/verify_submission.py', '--artifact', '/app/linkbench', '--workload', '/opt/w...ationError(\\nVerificationError: success exited 1: linkbench: unreadable or truncated trace string: 0x7f70c137e38f\\n\\n').returncode\n\ntests/test_outputs.py:348: AssertionError",
+                "message": "The test failed in the call phase due to an assertion error"
+            },
+            {
+                "name": "test_outputs.py::test_reward_channel_rejects_daemonized_untrusted_code",
+                "status": "passed",
+                "duration": 228,
+                "start": 1792006789336,
+                "stop": 1792006789564,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            }
+        ]
+    }
+}

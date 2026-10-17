@@ -1,0 +1,13 @@
+{
+  "review_type": "Agent inspection of generated still-frame evidence, not human annotation or full-video playback",
+  "source_uncertainty_cases_reviewed": ["clip_021.mp4", "clip_028.mp4", "clip_042.mp4", "clip_065.mp4", "clip_113.mp4", "clip_177.mp4", "clip_198.mp4"],
+  "source_uncertainty_observation": "All seven panels support the proposed source as a plausible same-sequence candidate. Cropping/borders, low contrast, motion and temporal differences are visible. Automated uncertainty labels were retained; three still pairs do not certify exact timing.",
+  "timing_uncertainty_cases_reviewed": ["clip_080.mp4", "clip_082.mp4", "clip_155.mp4"],
+  "timing_uncertainty_observation": "The map, text card, and slowly changing shop scene support their source identities while offering weak temporal discrimination. Exact start and speed remain uncertain.",
+  "confident_cases_reviewed": ["clip_000.mp4", "clip_015.mp4", "clip_061.mp4", "clip_115.mp4", "clip_196.mp4"],
+  "confident_observation": "Three corresponding frames per clip show consistent scene/action progression despite watermarks, cropping, borders or color/contrast changes.",
+  "hard_negative_case": "clip_003.mp4",
+  "hard_negative_observation": "Comparison against master_02 at 0, 8, 16, 24 and 32 seconds showed similar people/location but different observed shots. Direct geometric verification of the sampled clip frame against every indexed master_02 frame failed, including a diagnostic mirrored query. No source assignment was made.",
+  "unidentified_review": "Inspected a mid-clip contact sheet of all 40 unidentified clips. It includes both visually distinct footage and same-film/scene lookalikes. No absence claim was inferred from this sheet.",
+  "classification_overrides": []
+}

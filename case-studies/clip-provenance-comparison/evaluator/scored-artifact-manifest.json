@@ -1,0 +1,26 @@
+[
+  {
+    "run": "DeepSeek",
+    "path": "../trials/deepseek/results.json",
+    "sha256": "7dbba194621b1321a642a1935125ba63a2177e6f1b04f89161f3d6e65c8efc73",
+    "size": 85974
+  },
+  {
+    "run": "Astra",
+    "path": "../trials/astra/results.json",
+    "sha256": "7efc78f1553549eca4405f8e9f354e44ae14ca95a740b83f5be2c29a4663a0ea",
+    "size": 144047
+  },
+  {
+    "run": "Kimi round 2 refined",
+    "path": "../trials/kimi/round-2-report.json",
+    "sha256": "2ffba3802deb8301cc50763144017664714835bdbf2c0c3565c4d16f501d39af",
+    "size": 90575
+  },
+  {
+    "run": "Kimi round 3",
+    "path": "../trials/kimi/round-3-decisions.json",
+    "sha256": "a534b4891a2b0b5eff1b4c75ec641b7e8c9a1a417ec3a7cb696b05de0d34eb41",
+    "size": 55218
+  }
+]

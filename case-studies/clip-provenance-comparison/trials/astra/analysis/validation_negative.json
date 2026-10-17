@@ -1,0 +1,63 @@
+[
+  {
+    "control": "analysis/controls/control_00.mp4",
+    "withheld": "masters/master_00.mp4",
+    "candidates": []
+  },
+  {
+    "control": "analysis/controls/control_03.mp4",
+    "withheld": "masters/master_07.mp4",
+    "candidates": [
+      {
+        "path": "masters/master_31.mp4",
+        "start": 10.866666666666667,
+        "speed": 0.8,
+        "score": 5.094247401077184,
+        "support": 1,
+        "evidence": [
+          {
+            "clip_time": 2.6666666666666665,
+            "path": "masters/master_31.mp4",
+            "time": 13.0,
+            "inliers": 8,
+            "ratio": 0.3333333333333333,
+            "coverage": 0.0636780925134648,
+            "error": 0.12408315986365256,
+            "affine": [
+              [
+                -1.7294028824247556,
+                1.204280668978995,
+                358.8967064338556
+              ],
+              [
+                1.6049852916891971,
+                -1.7961390855680446,
+                3.9101838448081456
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "control": "analysis/controls/control_06.mp4",
+    "withheld": "masters/master_15.mp4",
+    "candidates": []
+  },
+  {
+    "control": "analysis/controls/control_09.mp4",
+    "withheld": "masters/master_23.mp4",
+    "candidates": []
+  },
+  {
+    "control": "analysis/controls/control_12.mp4",
+    "withheld": "masters/master_32.mp4",
+    "candidates": []
+  },
+  {
+    "control": "analysis/controls/control_15.mp4",
+    "withheld": "masters/master_38.mp4",
+    "candidates": []
+  }
+]

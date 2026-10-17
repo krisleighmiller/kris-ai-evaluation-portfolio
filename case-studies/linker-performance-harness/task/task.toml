@@ -1,0 +1,35 @@
+# Harbor task configuration (see https://docs.harborframework.com/tasks/configuration).
+schema_version = "1.4"
+artifacts = ["/app/linkbench"]
+
+[task]
+name = "terminal-use-agents/linker-performance-harness"
+description = "Repair a self-contained harness that benchmarks four ELF linkers over a captured compiler-driver link."
+keywords = ["elf", "linkers", "benchmarking", "performance-engineering"]
+
+[metadata]
+difficulty_explanation = "Trustworthy linker benchmarking is difficult because requested linker labels, executed processes, timing schedules, thread controls, output freshness, probes, and failure semantics can disagree in interacting ways. The visible and hidden workloads are seeded synthetic C link graphs generated at image-build time; their archive cycles, relocation-heavy inputs, and correctness probes reproduce the integrity failures of captured production links without shipping proprietary code. Toolchain and build-infrastructure engineers do this work when evaluating linker migrations or CI build-time improvements, where a silent fallback or unfair thread configuration can invalidate the decision."
+solution_explanation = "The reference harness follows the workload schedule verbatim, applies per-linker selectors and thread controls, times complete compiler-driver processes with a monotonic clock, observes descendant executable events with ptrace, validates every fresh output, and derives medians and ranking from raw samples."
+verification_explanation = "The separate verifier uses a hidden native workload for real-toolchain integration and authenticated controlled driver and linker binaries for adversarial protocol enforcement. Shared-dispatcher entry points, non-normalized paths, argument-free same-family decoys bracketing each link in a link-dependent number, a linker-shaped post-link helper, a wrong-family alias and a late same-path family change exercise identity attribution without trusting exec order, path labels, cached versions or resolved inodes. The controlled observer authenticates each peer's executable image, and root-only signed evidence checks exact execution order, pre-resolution identity, thread controls, fresh outputs, probes, aggregation, observer-derived ranking and all-or-nothing failure behavior. Reported samples may be at most 2 ms shorter than the observer interval and at most 200 ms longer: the lower slack covers observer timestamp placement, while the upper allowance absorbs driver fork and exec work, Unix-socket round trips, ptrace overhead and CPU contention within the two-CPU budget. These bounds are broad relative to the injected 20 to 220 ms delays and were exercised during development with the reference solution and intentionally flawed harnesses. The native workload adds proof of work so that its report cannot be assembled from the manifest and the installed linkers alone: the verifier times warmed reference links of the same workload for each linker under that linker's declared thread controls, then requires the submitted run to consume at least four times their combined cost in wall time, to report no more link time than that wall clock, to report each median within an order of magnitude of that linker's reference, and to rank the submitted linkers by their own reported medians. The native timing bounds deter fabricated samples while the ranking check enforces the stated median-order rule without imposing a potentially variable reference order. The bands are wide enough for tracing overhead and two-CPU contention while a fabricated report, which returns almost immediately, fails the wall-clock floor."
+category = "Software"
+subcategory = "linkers-and-loaders"
+tags = ["elf", "linkers", "benchmarking", "performance-engineering", "x86-only"]
+expert_time_estimate_hours = 8.0
+relevant_experience = "Systems programming, ELF linkers, Linux process tracing, compiler-driver behavior, and reproducible performance measurement."
+
+[verifier]
+timeout_sec = 1200.0
+environment_mode = "separate"
+
+[agent]
+timeout_sec = 28800.0 # Time budget stated in instruction.md.
+
+[environment]
+build_timeout_sec = 6000.0
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
+gpus = 0
+# Build-time package installation remains online; agent and verifier execution
+# use this task's network policy (no external API is needed).
+network_mode = "public"

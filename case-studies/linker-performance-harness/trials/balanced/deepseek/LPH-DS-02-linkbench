@@ -1,0 +1,325 @@
+#!/usr/bin/env python3
+"""Benchmark four installed ELF linkers over one captured final link."""
+
+import json
+import os
+import re
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+SELECTOR = {
+    "bfd": ["-fuse-ld=bfd"],
+    "gold": ["-fuse-ld=gold"],
+    "lld": ["-fuse-ld=lld"],
+    "mold": ["-fuse-ld=mold"],
+}
+THREADS = {
+    "bfd": [],
+    "gold": ["-Wl,--threads", "-Wl,--thread-count=2"],
+    "lld": ["-Wl,--threads=2"],
+    "mold": ["-Wl,--threads=2", "-Wl,--no-fork"],
+}
+EFFECTIVE = {"bfd": 1, "gold": 2, "lld": 2, "mold": 2}
+MARKERS = [
+    ("mold", "mold"),
+    ("GNU gold", "gold"),
+    ("LLD", "lld"),
+    ("GNU ld", "bfd"),
+]
+
+
+class Error(RuntimeError):
+    pass
+
+
+def log(msg):
+    print(f"linkbench: {msg}", file=sys.stderr)
+
+
+def first_line(text):
+    for line in text.splitlines():
+        if line.strip():
+            return line
+    return ""
+
+
+def classify(line):
+    low = line.lower()
+    for marker, lid in MARKERS:
+        if marker.lower() in low:
+            return lid
+    return None
+
+
+def version_probe(invoked_path, cwd, env):
+    r = subprocess.run(
+        [invoked_path, "--version"],
+        cwd=cwd,
+        env=env,
+        timeout=30,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdin=subprocess.DEVNULL,
+        text=True,
+    )
+    if r.returncode:
+        raise Error(f"{invoked_path} --version failed with code {r.returncode}")
+    line = first_line(r.stdout)
+    if not line:
+        raise Error(f"{invoked_path} --version produced no output")
+    cid = classify(line)
+    if cid is None:
+        raise Error(
+            f"{invoked_path} --version could not be classified: {line}"
+        )
+    return line, cid
+
+
+def probe_output(out, manifest, cwd, env):
+    try:
+        st = os.stat(out)
+    except FileNotFoundError:
+        raise Error(f"output not found: {out}")
+    if not stat.S_ISREG(st.st_mode):
+        raise Error(f"output is not a regular file: {out}")
+
+    argv = [str(out) if a == "{output}" else a for a in manifest["probe"]["argv"]]
+    try:
+        r = subprocess.run(
+            argv,
+            cwd=cwd,
+            env=env,
+            timeout=30,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            text=True,
+        )
+    except OSError as e:
+        raise Error(f"cannot start probe: {e}")
+
+    p = manifest["probe"]
+    if r.returncode != p["expected_returncode"]:
+        raise Error(
+            f"probe returned {r.returncode}, expected {p['expected_returncode']}"
+        )
+    if r.stdout != p["expected_stdout"]:
+        raise Error(f"probe stdout mismatch")
+    if r.stderr != p["expected_stderr"]:
+        raise Error(f"probe stderr mismatch")
+
+
+def find_linker_path(trace_file):
+    """Parse strace -f -e trace=execve output and return the linker path."""
+    execve_re = re.compile(r'^\d+\s+execve\("([^"]*)"')
+    matches = []
+    with open(trace_file, "r") as f:
+        for line in f:
+            m = execve_re.match(line)
+            if not m:
+                continue
+            path = m.group(1)
+            base = os.path.basename(path)
+            if base.startswith("ld") or base == "mold" or base.startswith("mold"):
+                matches.append(path)
+    if not matches:
+        raise Error("no linker process found in strace output")
+    return matches[-1]
+
+
+def load_workload(wd):
+    try:
+        manifest = json.loads((wd / "workload.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        raise Error(f"cannot read workload.json: {e}")
+
+    if manifest.get("schema_version") != 1:
+        raise Error("unsupported workload schema")
+    if not isinstance(manifest.get("workload_id"), str):
+        raise Error("workload_id is missing")
+
+    wo = manifest.get("warmup_order")
+    if not isinstance(wo, list) or sorted(wo) != ["bfd", "gold", "lld", "mold"]:
+        raise Error("warmup_order must contain each linker ID exactly once")
+
+    tr = manifest.get("timed_rounds")
+    if not isinstance(tr, list) or len(tr) != 5:
+        raise Error("timed_rounds must contain five rounds")
+    for i, rnd in enumerate(tr):
+        if not isinstance(rnd, list) or sorted(rnd) != ["bfd", "gold", "lld", "mold"]:
+            raise Error(f"timed_rounds[{i}] must contain each linker ID exactly once")
+
+    rf = manifest.get("response_file")
+    if not isinstance(rf, str):
+        raise Error("response_file is missing")
+    rp = wd / rf
+    if not rp.is_file():
+        raise Error(f"response file does not exist: {rp}")
+    return manifest, rp.resolve()
+
+
+def execute_link(
+    manifest, response, lid, output, *, cwd, env, expected_path
+):
+    if os.path.exists(output):
+        os.unlink(output)
+
+    cmd = [
+        manifest["driver"],
+        *SELECTOR[lid],
+        *THREADS[lid],
+        f"@{response}",
+        "-o",
+        str(output),
+    ]
+
+    fd, trace = tempfile.mkstemp(suffix=".strace", prefix="linkbench-")
+    os.close(fd)
+
+    start = time.monotonic_ns()
+    try:
+        r = subprocess.run(
+            ["strace", "-f", "-e", "trace=execve", "-s", "65536", "-o", trace] + cmd,
+            cwd=cwd,
+            env=env,
+            timeout=300,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            text=True,
+        )
+    finally:
+        elapsed = time.monotonic_ns() - start
+
+    try:
+        linker_path = find_linker_path(trace)
+    finally:
+        try:
+            os.unlink(trace)
+        except OSError:
+            pass
+
+    if r.returncode:
+        raise Error(f"{lid} link failed with code {r.returncode}")
+
+    if expected_path is not None and linker_path != expected_path:
+        raise Error(
+            f"{lid} path changed: {linker_path} != {expected_path}"
+        )
+
+    probe_output(output, manifest, cwd, env)
+
+    version, cid = version_probe(linker_path, cwd, env)
+    if cid != lid:
+        raise Error(
+            f"{lid} identity mismatch: {linker_path} classified as {cid}"
+        )
+
+    if elapsed <= 0:
+        elapsed = 1
+    return elapsed, linker_path, version
+
+
+def run_benchmark(workload_dir, report_path):
+    wd = Path(workload_dir).resolve()
+    manifest, response = load_workload(wd)
+
+    rp = Path(report_path)
+    if os.path.exists(rp):
+        os.unlink(rp)
+
+    with tempfile.TemporaryDirectory(prefix="linkbench-") as td:
+        tmp = Path(td)
+        env = os.environ.copy()
+        env.update({
+            "TMPDIR": str(tmp),
+            "TMP": str(tmp),
+            "TEMP": str(tmp),
+            "LC_ALL": "C",
+            "LANG": "C",
+        })
+
+        paths = {}
+        versions = {}
+        samples = {lid: [] for lid in ["bfd", "gold", "lld", "mold"]}
+
+        for lid in manifest["warmup_order"]:
+            log(f"warming {lid}")
+            out = tmp / f"out-warm-{lid}"
+            _, p, v = execute_link(
+                manifest, response, lid, out, cwd=wd, env=env, expected_path=None
+            )
+            paths[lid] = p
+            versions[lid] = v
+
+        for ri, order in enumerate(manifest["timed_rounds"]):
+            for lid in order:
+                log(f"round {ri + 1} {lid}")
+                out = tmp / f"out-r{ri}-{lid}"
+                ns, p, v = execute_link(
+                    manifest,
+                    response,
+                    lid,
+                    out,
+                    cwd=wd,
+                    env=env,
+                    expected_path=paths[lid],
+                )
+                if p != paths[lid]:
+                    raise Error(f"{lid} path changed across runs")
+                if v != versions[lid]:
+                    raise Error(f"{lid} version changed across runs")
+                samples[lid].append(ns)
+
+    medians = {lid: sorted(samples[lid])[2] for lid in ["bfd", "gold", "lld", "mold"]}
+    results = []
+    for lid in ["bfd", "gold", "lld", "mold"]:
+        results.append({
+            "linker": lid,
+            "invoked_path": paths[lid],
+            "version": versions[lid],
+            "effective_threads": EFFECTIVE[lid],
+            "samples_ns": samples[lid],
+            "median_ns": medians[lid],
+        })
+    ranking = sorted(
+        ["bfd", "gold", "lld", "mold"], key=lambda lid: (medians[lid], lid)
+    )
+
+    report = {
+        "schema_version": 1,
+        "workload_id": manifest["workload_id"],
+        "results": results,
+        "ranking": ranking,
+    }
+
+    rp.parent.mkdir(parents=True, exist_ok=True)
+    rp.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    log(f"wrote report to {rp}")
+
+
+def main():
+    if len(sys.argv) != 3:
+        print(
+            "usage: /app/linkbench <workload-directory> <report-json>",
+            file=sys.stderr,
+        )
+        return 2
+    try:
+        run_benchmark(Path(sys.argv[1]), Path(sys.argv[2]))
+    except (Error, OSError, KeyError, TypeError, ValueError) as e:
+        log(str(e))
+        try:
+            os.unlink(sys.argv[2])
+        except OSError:
+            pass
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

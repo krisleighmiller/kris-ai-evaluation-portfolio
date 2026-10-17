@@ -1,0 +1,7 @@
+event_id,session_id,event_at,category,detector_version,notified_at,delivery_status,attempts
+AL-2603-001,S-2603-0118,2026-03-27T21:15:22-05:00,self_harm_direct,CVC-1.4,2026-03-27T21:18:07-05:00,delivered,1
+AL-2604-002,S-2604-0127,2026-04-04T02:11:04-05:00,self_harm_direct,CVC-1.4,2026-04-04T02:18:36-05:00,delivered_after_retry,2
+AL-2605-003,S-2605-0638,2026-05-25T13:25:03-05:00,self_harm_direct,CVC-1.4,2026-05-25T13:28:11-05:00,delivered,1
+AL-2607-004,S-2607-1014,2026-07-16T23:17:48-05:00,threat_to_other,CVC-1.5,2026-07-16T23:23:21-05:00,delivered,1
+AL-2607-005,S-2607-1058,2026-07-24T10:42:03-05:00,self_harm_direct,CVC-1.5,2026-07-24T10:44:52-05:00,delivered,1
+AL-2608-006,S-2608-1245,2026-08-19T01:27:21-05:00,self_harm_direct,CVC-1.5,2026-08-19T01:32:09-05:00,delivered,1

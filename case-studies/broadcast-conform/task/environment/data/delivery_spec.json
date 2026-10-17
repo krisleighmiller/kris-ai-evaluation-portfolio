@@ -1,0 +1,77 @@
+{
+  "master": {
+    "path": "/app/master.mp4",
+    "container": "mp4",
+    "container_note": "A genuine MP4: the file must name an ISO base-media brand, either as its major brand or among its compatible brands. Any of isom, iso2, iso4, iso5, iso6, mp41, mp42, mp71, avc1, m4v, mmp4, dash, cmfc, msdh counts, which is what a standard MP4 mux writes. The QuickTime brand 'qt  ' does not, so a QuickTime/MOV file renamed to .mp4 does not satisfy this even though the two formats share a demuxer family.",
+    "streams_note": "The master must contain exactly one video stream and one audio stream and nothing else: no data tracks, attachments, cover art, chapters-as-streams, or secondary audio.",
+    "video_codec": "h264",
+    "width": 1920,
+    "height": 1080,
+    "sample_aspect_ratio": "1:1",
+    "frame_rate": "30/1",
+    "constant_frame_rate_required": true,
+    "duration_note": "The cut list's master duration applies to the whole file, not just the video stream: the video frame count and video duration must match it within duration_tolerance_frames, and the container duration and the audio stream duration must match it within program_duration_tolerance_ms. A trailing audio tail or a truncated audio track fails even when the video is exactly right.",
+    "scan": "progressive",
+    "pix_fmt": "yuv420p",
+    "color": {
+      "matrix": "bt709",
+      "primaries": "bt709",
+      "transfer": "bt709",
+      "range": "tv",
+      "tags_required": true,
+      "tags_note": "All four color values must be reported for the video stream by standard probing (ffprobe stream color_space, color_primaries, color_transfer, color_range).",
+      "note": "Pixel data must actually be encoded in BT.709 limited range. A source in another matrix or range must be converted, not retagged.",
+      "conversion_scope_note": "Where a source's picture is BT.601 (SMPTE 170M), the required conversion is of the YCbCr matrix and signal range only. SMPTE 170M and BT.709 primaries and transfer are treated as display-compatible for this delivery: do not gamut-map primaries or remap the transfer curve. Tag the master BT.709 across all four fields regardless."
+    },
+    "max_keyframe_interval_frames": 60,
+    "keyframe_note": "The interval bound applies across the entire program: the first frame must be a keyframe and the final GOP, measured to the end of the file, must also respect the bound.",
+    "audio": {
+      "codec": "aac",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "integrated_loudness_lufs": -14.0,
+      "integrated_loudness_tolerance_lu": 0.5,
+      "true_peak_max_dbtp": -1.0,
+      "true_peak_tolerance_db": 0.2,
+      "true_peak_note": "true_peak_max_dbtp is the delivery limit; the oversampled true-peak reading of the delivered file is allowed true_peak_tolerance_db above it, because the file is measured by a different ffmpeg build than the one that wrote it and that reading is not guaranteed identical across builds. Aim at the limit, not at the allowance.",
+      "segment_loudness_tolerance_lu": 1.0,
+      "segment_loudness_note": "For each segment in the cut list, the mean short-term loudness (EBU R128, 3 s window) measured across that segment must sit within segment_loudness_tolerance_lu of the program integrated loudness. The measurement is the mean of the short-term readings taken over that segment's audio on its own, counting complete 3 s windows, so no window straddles a cut and each segment has to be level in its own right. It is the arithmetic mean of the reported LUFS values, not an energy average of them; on this material the two agree well inside the tolerance, so either way of levelling a segment passes.",
+      "segment_audio_provenance_note": "Each segment's audio must be that segment's own source audio, conformed per this spec. Substituting another source's audio or synthesizing a replacement track does not satisfy this."
+    },
+    "av_sync_tolerance_ms": 50,
+    "av_sync_measurement": "Sync offset is the difference between the presentation start time of the first master frame showing a white flash and the onset of its paired 1 kHz beep, measured in the delivered master. Every flash and beep pair that the cut list places inside the master must agree within av_sync_tolerance_ms.",
+    "beep_interval_tolerance_ms": 10,
+    "beep_interval_note": "Within each segment, the spacing between the onsets of consecutive sync beeps in the delivered master must match the spacing of those same beep onsets as measured in the source audio, with any recorder clock drift removed, within beep_interval_tolerance_ms. The reference is that measured source spacing and not the nominal interval the markers look like they are aiming at: consecutive gaps in a source are not all equal, and the recordings are not expected to be regular. Removing drift means removing a clock-rate error fitted across the recording, so carrying a source's own audio through the conform satisfies this; re-timing individual beeps onto a regular grid does not, and is not what this asks for.",
+    "cut_point_note": "Each segment must cover exactly the span of source content the cut list names, in order: all of that span, nothing from outside it, and nothing borrowed from a neighbouring segment across a cut. Which source frames land in the master is then decided by the rate conversion, and repeating or dropping frames is expected wherever a source's rate differs from the master's; only the span is fixed, not the frame count. What is not acceptable is a picture that is in no source frame at all, so each master frame must be a source frame rather than one mixed from two of them by a blending or motion-interpolating rate conversion. This is checked at the sync flashes, where a mixed frame is unmistakable: every frame of a faithful conform is either a full-frame flash or ordinary picture, never a blend of the two.",
+    "marker_placement_tolerance_ms": 45,
+    "marker_placement_note": "Every white flash and every beep must land within marker_placement_tolerance_ms of the master-timeline position the cut list implies for it, and the master must contain exactly the flash and beep events the cut list places inside it: none missing, none extra. The implied position of a marker is master_start_sec + (its time in the source's displayed timeline - source_in_sec), which is where a faithful conform of the named span puts it with no special handling; markers are not to be re-timed."
+  },
+  "source_interpretation": {
+    "tag_reliability": "The color metadata in a source may be wrong. Where a source's color tags disagree with its picture, the picture is authoritative: interpret every source by what its pixels actually carry.",
+    "untagged_color": {
+      "matrix": "smpte170m",
+      "primaries": "smpte170m",
+      "transfer": "smpte170m",
+      "range": "tv",
+      "note": "Any source whose bitstream carries no color tags, and whose picture gives no better evidence, must be interpreted as BT.601 (SMPTE 170M) limited range."
+    },
+    "rotation": "Display-rotation metadata must be applied; the displayed orientation is the authoritative picture.",
+    "display_geometry": "A source's displayed picture is its coded raster with display rotation and pixel aspect ratio (sample aspect ratio) applied. Anamorphic sources must be resolved to square pixels, and the master itself must be square-pixel.",
+    "scaling": {
+      "mode": "fit",
+      "preserve_aspect_ratio": true,
+      "position": "center",
+      "pad_color": "black",
+      "note": "Every source is scaled to fit inside 1920x1080 with its displayed aspect ratio preserved, upscaling if it is smaller than the frame, then centered, with black padding (limited-range black: Y=16, neutral chroma) covering whatever the picture does not. No cropping and no stretching."
+    }
+  },
+  "tolerances": {
+    "patch_rgb_tolerance": 10,
+    "luma_tolerance": 5,
+    "chroma_neutral_tolerance": 4,
+    "duration_tolerance_frames": 2,
+    "program_duration_tolerance_ms": 100,
+    "bed_hz_relative_tolerance": 0.03,
+    "note": "Bounds applied when the delivered master is compared against reference values derived from the source footage at authoring time: per-channel RGB error of picture content decoded as BT.709 limited, raw luma error, chroma deviation from neutral (128), video frame count and video duration against the cut list, container and audio-stream duration against the cut list's program length, and relative error of a segment's audio bed frequency."
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "results": [
+    {
+      "checks": {
+        "behavior_in_task_description": {
+          "explanation": "instruction.md explicitly specifies the schedule, linker selectors and thread controls, monotonic timing, exec-derived identity and verbatim paths, version classification, fresh outputs and probes, failure cleanup, report schema, and native timing plausibility bounds enforced by the verifier.",
+          "outcome": "pass"
+        },
+        "behavior_in_tests": {
+          "explanation": "The native and controlled tests cover the described schedule, argument policy, timing correlation, identity and path rules, version probes, output and probe validation, report aggregation and ranking, immutability, and all-or-nothing failure behavior.",
+          "outcome": "pass"
+        },
+        "informative_test_structure": {
+          "explanation": "The pytest cases have descriptive names and docstrings, while the verifier separates report, success, and fault validation with named scenarios and protocol constants.",
+          "outcome": "pass"
+        },
+        "anti_cheating_measures": {
+          "explanation": "The runtime image excludes tests and solution, the hidden workload differs from the visible one and requires real work, and isolated users plus authenticated controlled tools and signed observer evidence resist fabricated reports.",
+          "outcome": "pass"
+        },
+        "structured_data_schema": {
+          "explanation": "instruction.md gives the normative report shape with exactly four top-level keys and six result keys, and workload-format.md documents the manifest and probe schema and constraints.",
+          "outcome": "pass"
+        },
+        "pinned_dependencies": {
+          "explanation": "Both Dockerfiles use digest-pinned Ubuntu bases and verifier Python packages are pinned to exact versions; the remaining external packages are apt packages exempted by the criterion.",
+          "outcome": "pass"
+        },
+        "typos": {
+          "explanation": "Filenames, paths, manifest keys, commands, linker IDs, thread arguments, and controlled-tool names are consistent across the instructions, environment, solution, and tests.",
+          "outcome": "pass"
+        },
+        "tests_or_solution_in_image": {
+          "explanation": "environment/Dockerfile copies runtime support, workload-generation inputs, and the diagnostic lab, but does not copy tests/ or solution/ into the runtime image.",
+          "outcome": "pass"
+        },
+        "test_deps_in_image": {
+          "explanation": "Verifier-only packages and build dependencies such as pytest, CTRF reporting, OpenSSL headers, and util-linux are installed in tests/Dockerfile, while the runtime image contains required harness dependencies.",
+          "outcome": "pass"
+        },
+        "hardcoded_solution": {
+          "explanation": "solution/linkbench.py derives the report from live tracing, identity and version probes, output validation, monotonic durations, median calculation, and ranking rather than echoing a fixed answer.",
+          "outcome": "pass"
+        },
+        "file_reference_mentioned": {
+          "explanation": "instruction.md explicitly names the required /app/linkbench artifact, its workload-directory and report-json invocation, and the workload documentation path /app/workload/README.md.",
+          "outcome": "pass"
+        }
+      },
+      "cost_usd": 0.03880888999999999,
+      "task_name": "",
+      "error": null
+    }
+  ]
+}

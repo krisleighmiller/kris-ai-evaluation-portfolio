@@ -1,0 +1,28 @@
+{
+  "development": {
+    "count": 18,
+    "correct": 18,
+    "confident": 10,
+    "median": 0.00774134179482866,
+    "maximum": 0.09999987920221898,
+    "all_median": 0.0171461647417519,
+    "all_max": 0.927777075211063,
+    "statuses": {
+      "confident": 10,
+      "uncertain": 8
+    }
+  },
+  "holdout": {
+    "count": 12,
+    "correct": 12,
+    "confident": 11,
+    "median": 0.023000265581078594,
+    "maximum": 0.17366180691845567,
+    "all_median": 0.022500117166725175,
+    "all_max": 0.17366180691845567,
+    "statuses": {
+      "uncertain": 1,
+      "confident": 11
+    }
+  }
+}

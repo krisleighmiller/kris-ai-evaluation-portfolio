@@ -1,0 +1,362 @@
+#!/usr/bin/env python3
+"""Replay a captured driver link, observing the executable that creates its output."""
+
+import bisect
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+
+
+LINKERS = ("bfd", "gold", "lld", "mold")
+THREAD_ARGS = {
+    "bfd": [],
+    "gold": ["-Wl,--threads", "-Wl,--thread-count=2"],
+    "lld": ["-Wl,--threads=2"],
+    "mold": ["-Wl,--threads=2", "-Wl,--no-fork"],
+}
+SELF = os.path.abspath(__file__)
+
+
+class HarnessError(Exception):
+    pass
+
+
+def require(condition, message):
+    if not condition:
+        raise HarnessError(message)
+
+
+def inside(path, directory):
+    return path == directory or directory in path.parents
+
+
+def load_workload(workload):
+    manifest = json.loads((workload / "workload.json").read_text(encoding="utf-8"))
+    require(isinstance(manifest, dict), "manifest must be an object")
+    require(type(manifest.get("schema_version")) is int and
+            manifest["schema_version"] == 1, "unsupported workload schema")
+    require(isinstance(manifest.get("workload_id"), str) and
+            manifest["workload_id"], "missing workload_id")
+    driver = manifest.get("driver")
+    require(isinstance(driver, str) and os.path.isabs(driver),
+            "driver must be an absolute path")
+
+    def order(value):
+        return (isinstance(value, list) and len(value) == 4 and
+                all(isinstance(x, str) for x in value) and set(value) == set(LINKERS))
+
+    require(order(manifest.get("warmup_order")), "invalid warmup_order")
+    rounds = manifest.get("timed_rounds")
+    require(isinstance(rounds, list) and len(rounds) == 5 and
+            all(order(value) for value in rounds), "invalid timed_rounds")
+    relative = manifest.get("response_file")
+    require(isinstance(relative, str) and relative and
+            not os.path.isabs(relative) and ".." not in Path(relative).parts,
+            "invalid response_file")
+    response = (workload / relative).resolve()
+    require(inside(response, workload) and response.is_file(),
+            "response_file must be a file within the workload")
+    probe = manifest.get("probe")
+    require(isinstance(probe, dict), "missing probe")
+    require(isinstance(probe.get("argv"), list) and probe["argv"] and
+            all(isinstance(x, str) for x in probe["argv"]), "invalid probe argv")
+    require(type(probe.get("expected_returncode")) is int and
+            isinstance(probe.get("expected_stdout"), str) and
+            isinstance(probe.get("expected_stderr"), str), "invalid probe expectations")
+    return manifest, response
+
+
+def timed_driver(timing_file, command):
+    """Runs under strace; the clock excludes tracer startup and metadata probes."""
+    started = time.monotonic_ns()
+    process = subprocess.Popen(command, stdin=subprocess.DEVNULL)
+    status = process.wait()
+    elapsed = time.monotonic_ns() - started
+    Path(timing_file).write_text(json.dumps({
+        "pid": process.pid, "returncode": status, "elapsed_ns": elapsed,
+    }), encoding="utf-8")
+    return 0
+
+
+def split_arguments(text):
+    """Split strace arguments, respecting arrays, structures and quoted strings."""
+    result, start, depth, quoted, escaped = [], 0, 0, False, False
+    for index, char in enumerate(text):
+        if quoted:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                quoted = False
+        elif char == '"':
+            quoted = True
+        elif char in "[{(":
+            depth += 1
+        elif char in "]})":
+            depth -= 1
+        elif char == "," and depth == 0:
+            result.append(text[start:index].strip())
+            start = index + 1
+    result.append(text[start:].strip())
+    return result
+
+
+def trace_string(value):
+    # -xx makes all string bytes hexadecimal, including quotes and backslashes.
+    if not re.fullmatch(r'"(?:\\x[0-9a-fA-F]{2})*"', value):
+        raise HarnessError("unreadable or truncated trace string: " + value)
+    return os.fsdecode(bytes.fromhex(value[1:-1].replace("\\x", "")))
+
+
+def trace_events(trace):
+    pending = {}
+    with trace.open(encoding="utf-8") as stream:
+        for index, line in enumerate(stream):
+            match = re.match(r"\s*(\d+)\s+(.*)", line.rstrip("\n"))
+            require(match is not None, "trace has no process ID")
+            pid, text = int(match[1]), match[2]
+            if text.endswith(" <unfinished ...>"):
+                pending[pid] = (index, text[:-len(" <unfinished ...>")])
+                continue
+            if text.startswith("<... "):
+                resumed = re.match(r"<\.\.\. (\w+) resumed>(.*)", text)
+                require(resumed is not None and pid in pending,
+                        "unmatched resumed syscall")
+                index, beginning = pending.pop(pid)
+                text = beginning + resumed[2]
+            call = re.match(r"(\w+)\((.*)\)\s+=\s+(-?\d+)(?:\s|<|$)", text)
+            if call:
+                yield index, pid, call[1], split_arguments(call[2]), int(call[3])
+            elif not (text.startswith("--- ") or text.startswith("+++ ") or
+                      "= ?" in text):
+                raise HarnessError("unrecognized trace event: " + text)
+
+
+def output_linker(trace, output, workload, driver_pid):
+    """Attribute output creation to an executed image, not a linker-like name.
+
+    Drivers can run helper/diagnostic linkers too. Track successful output opens
+    and renames, retaining the creating image through forks and staged outputs.
+    Only successful execve events supply executable names; never canonicalize
+    those names (even if several names refer to one inode).
+    """
+    events = sorted(trace_events(trace))
+    images, parents = {}, {}
+    for index, pid, call, args, status in events:
+        if call in ("execve", "execveat") and status == 0:
+            path = trace_string(args[0 if call == "execve" else 1])
+            images.setdefault(pid, []).append((index, path))
+        elif call in ("clone", "clone3", "fork", "vfork") and status > 0:
+            parents[status] = (pid, index)
+
+    def image(pid, index):
+        history = images.get(pid, [])
+        position = bisect.bisect_right([item[0] for item in history], index)
+        if position:
+            return history[position - 1][1]
+        if pid in parents:
+            parent, birth = parents[pid]
+            return image(parent, birth)
+        raise HarnessError("cannot identify the output-producing process")
+
+    def descendant(pid):
+        while pid != driver_pid and pid in parents:
+            pid = parents[pid][0]
+        return pid == driver_pid
+
+    # Path normalization here is for output-file bookkeeping ONLY.
+    directories = {}
+
+    def cwd(pid):
+        if pid in directories:
+            return directories[pid]
+        if pid in parents:
+            return cwd(parents[pid][0])
+        return str(workload)
+
+    def filename(pid, encoded, dirfd="AT_FDCWD"):
+        name = trace_string(encoded)
+        if os.path.isabs(name):
+            return os.path.normpath(name)
+        if dirfd == "AT_FDCWD":
+            return os.path.normpath(os.path.join(cwd(pid), name))
+        # -yy includes the directory name when openat/renameat use a real fd.
+        match = re.fullmatch(r"(?:\d+|AT_FDCWD)<(.*)>", dirfd)
+        if match:
+            base = match[1]
+            if base.startswith("\\x"):
+                base = trace_string('"' + base + '"')
+            return os.path.normpath(os.path.join(base, name))
+        return None
+
+    owners = {}
+    for index, pid, call, args, status in events:
+        if status < 0 or not descendant(pid):
+            continue
+        if call in ("clone", "clone3", "fork", "vfork") and status > 0:
+            directories[status] = cwd(pid)
+        elif call == "chdir" and status == 0:
+            directories[pid] = filename(pid, args[0])
+        elif call == "fchdir" and status == 0:
+            directories[pid] = filename(pid, '""', args[0])
+        elif call in ("open", "openat", "creat"):
+            if call == "openat":
+                path, flags = filename(pid, args[1], args[0]), args[2]
+            else:
+                path = filename(pid, args[0])
+                flags = args[1] if call == "open" else "O_WRONLY|O_CREAT|O_TRUNC"
+            if path is not None and ("O_WRONLY" in flags or "O_RDWR" in flags):
+                owners[path] = image(pid, index)
+        elif call in ("rename", "renameat", "renameat2") and status == 0:
+            if call == "rename":
+                source, target = filename(pid, args[0]), filename(pid, args[1])
+            else:
+                source = filename(pid, args[1], args[0])
+                target = filename(pid, args[3], args[2])
+            if target is not None:
+                owners[target] = owners.pop(source, None) or image(pid, index)
+        elif call in ("unlink", "unlinkat") and status == 0:
+            path = (filename(pid, args[0]) if call == "unlink" else
+                    filename(pid, args[1], args[0]))
+            owners.pop(path, None)
+    selected = owners.get(str(output))
+    require(selected is not None and os.path.isabs(selected),
+            "no absolute executed linker path could be attributed to the output")
+    return selected
+
+
+def probe_output(output, probe, workload, environment):
+    require(stat.S_ISREG(output.lstat().st_mode), "output is not a regular file")
+    argv = [str(output) if x == "{output}" else x for x in probe["argv"]]
+    result = subprocess.run(argv, cwd=workload, env=environment,
+                            stdin=subprocess.DEVNULL, capture_output=True)
+    require(result.returncode == probe["expected_returncode"] and
+            result.stdout == probe["expected_stdout"].encode("utf-8") and
+            result.stderr == probe["expected_stderr"].encode("utf-8"),
+            "output failed the manifest probe")
+
+
+def version_at(path, linker, workload, environment):
+    result = subprocess.run([path, "--version"], cwd=workload, env=environment,
+                            stdin=subprocess.DEVNULL, capture_output=True)
+    require(result.returncode == 0, path + " --version failed")
+    version = next((line for line in result.stdout.decode("utf-8").splitlines()
+                    if line.strip()), "")
+    require(version, path + " has no version line")
+    family = next((family for marker, family in
+                   (("mold", "mold"), ("gnu gold", "gold"),
+                    ("lld", "lld"), ("gnu ld", "bfd"))
+                   if marker in version.casefold()), None)
+    require(family == linker, f"{linker} executed {path}, whose version is {version!r}")
+    return version
+
+
+def execute_link(manifest, response, linker, scratch, workload, environment, known):
+    output = scratch / ("output-" + linker)
+    output.unlink(missing_ok=True)
+    trace, timing = scratch / "trace", scratch / "timing.json"
+    timing.unlink(missing_ok=True)
+    command = [manifest["driver"], "-fuse-ld=" + linker, *THREAD_ARGS[linker],
+               "@" + str(response), "-o", str(output)]
+    traced = ["strace", "-f", "-qq", "-s", "0", "-xx", "-yy",
+              "-e", "trace=execve,execveat,clone,clone3,fork,vfork,open,openat,creat,"
+              "rename,renameat,renameat2,unlink,unlinkat,chdir,fchdir",
+              "-o", str(trace), "--", sys.executable, SELF,
+              "--internal-driver", str(timing), *command]
+    with (scratch / "driver.stdout").open("wb") as stdout, \
+            (scratch / "driver.stderr").open("wb") as stderr:
+        result = subprocess.run(traced, cwd=workload, env=environment,
+                                stdin=subprocess.DEVNULL, stdout=stdout, stderr=stderr)
+    require(result.returncode == 0 and timing.is_file(),
+            "could not trace the driver: " +
+            (scratch / "driver.stderr").read_text(errors="replace"))
+    measurement = json.loads(timing.read_text())
+    require(measurement["returncode"] == 0,
+            f"{linker} link failed: " +
+            (scratch / "driver.stderr").read_text(errors="replace"))
+    elapsed = measurement["elapsed_ns"]
+    require(type(elapsed) is int and elapsed > 0, "invalid driver duration")
+    # Check the fresh output immediately, before the separate metadata process.
+    probe_output(output, manifest["probe"], workload, environment)
+    path = output_linker(trace, output, workload, measurement["pid"])
+    version = version_at(path, linker, workload, environment)
+    if linker in known:
+        require(known[linker]["invoked_path"] == path,
+                f"{linker} changed executed path between links")
+    else:
+        known[linker] = {"invoked_path": path, "version": version}
+    return elapsed
+
+
+def benchmark(workload, report_path):
+    workload = workload.resolve()
+    report_path = Path(os.path.abspath(report_path))
+    require(not inside(report_path.parent.resolve(), workload),
+            "report must be outside the workload")
+    report_path.unlink(missing_ok=True)
+    manifest, response = load_workload(workload)
+    # Ignore an inherited TMPDIR that might point into the read-only workload.
+    base = next((p for p in (Path.cwd().resolve(), Path("/tmp").resolve())
+                 if not inside(p, workload) and os.access(p, os.W_OK | os.X_OK)), None)
+    require(base is not None, "no writable scratch directory outside the workload")
+    known = {}
+    samples = {linker: [] for linker in LINKERS}
+    with tempfile.TemporaryDirectory(prefix="linkbench-", dir=base) as temp:
+        scratch = Path(temp)
+        environment = dict(os.environ, TMPDIR=temp, TMP=temp, TEMP=temp,
+                           LC_ALL="C", LANG="C")
+        for linker in manifest["warmup_order"]:
+            execute_link(manifest, response, linker, scratch, workload, environment, known)
+        for order in manifest["timed_rounds"]:
+            for linker in order:
+                samples[linker].append(execute_link(
+                    manifest, response, linker, scratch, workload, environment, known))
+    medians = {linker: sorted(samples[linker])[2] for linker in LINKERS}
+    report = {
+        "schema_version": 1,
+        "workload_id": manifest["workload_id"],
+        "results": [{"linker": linker, **known[linker],
+                     "effective_threads": 1 if linker == "bfd" else 2,
+                     "samples_ns": samples[linker], "median_ns": medians[linker]}
+                    for linker in LINKERS],
+        "ranking": sorted(LINKERS, key=medians.__getitem__),
+    }
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    # Publish only a complete report after every scheduled link has passed.
+    staging = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8",
+                                         dir=report_path.parent, prefix=".linkbench-",
+                                         delete=False) as stream:
+            staging = Path(stream.name)
+            json.dump(report, stream, indent=2)
+            stream.write("\n")
+        os.replace(staging, report_path)
+    finally:
+        if staging is not None:
+            staging.unlink(missing_ok=True)
+
+
+def main():
+    if len(sys.argv) >= 4 and sys.argv[1] == "--internal-driver":
+        return timed_driver(sys.argv[2], sys.argv[3:])
+    if len(sys.argv) != 3:
+        print("usage: linkbench <workload-directory> <report-json>", file=sys.stderr)
+        return 2
+    try:
+        benchmark(Path(sys.argv[1]), Path(sys.argv[2]))
+    except (HarnessError, OSError, ValueError, KeyError, TypeError) as exc:
+        print("linkbench: " + str(exc), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

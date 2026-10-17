@@ -1,0 +1,310 @@
+{
+  "seed": 20260822,
+  "masters": [
+    {
+      "file": "master_00.mp4",
+      "source_file_identifier": "mbrs02297907__master-hands.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_01.mp4",
+      "source_file_identifier": "00694425__san-francisco-earthquake-and-fire-april-18-1906.mp4",
+      "audio_dubbed": true
+    },
+    {
+      "file": "master_02.mp4",
+      "source_file_identifier": "mbrs00045468__modesta.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_03.mp4",
+      "source_file_identifier": "mbrs00021068__the-middleton-family-at-the-new-york-worlds-fair.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_04.mp4",
+      "source_file_identifier": "mbrs02023537__under-western-stars.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_05.mp4",
+      "source_file_identifier": "2017604960__all-my-babiesa-midwifes-own-story.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_06.mp4",
+      "source_file_identifier": "mbrs00047382__the-hitch-hiker.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_07.mp4",
+      "source_file_identifier": "mbrs00021068__the-middleton-family-at-the-new-york-worlds-fair.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_08.mp4",
+      "source_file_identifier": "mbrs00047382__the-hitch-hiker.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_09.mp4",
+      "source_file_identifier": "mbrs02023537__under-western-stars.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_10.mp4",
+      "source_file_identifier": "mbrs02023537__under-western-stars.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_11.mp4",
+      "source_file_identifier": "mbrs00009301__the-memphis-belle-a-story-of-a-flying-fortress.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_12.mp4",
+      "source_file_identifier": "mbrs02297907__master-hands.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_13.mp4",
+      "source_file_identifier": "mbrs00063365__st-louis-blues.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_14.mp4",
+      "source_file_identifier": "mbrs00045468__modesta.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_15.mp4",
+      "source_file_identifier": "mbrs02425201__trance-and-dance-in-bali.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_16.mp4",
+      "source_file_identifier": "mbrs00009301__the-memphis-belle-a-story-of-a-flying-fortress.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_17.mp4",
+      "source_file_identifier": "mbrs02425201__trance-and-dance-in-bali.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_18.mp4",
+      "source_file_identifier": "mbrs00009301__the-memphis-belle-a-story-of-a-flying-fortress.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_19.mp4",
+      "source_file_identifier": "mbrs02297907__master-hands.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_20.mp4",
+      "source_file_identifier": "2017604960__all-my-babiesa-midwifes-own-story.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_21.mp4",
+      "source_file_identifier": "mbrs02023537__under-western-stars.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_22.mp4",
+      "source_file_identifier": "mbrs00045468__modesta.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_23.mp4",
+      "source_file_identifier": "mbrs00009301__the-memphis-belle-a-story-of-a-flying-fortress.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_24.mp4",
+      "source_file_identifier": "mbrs00063365__st-louis-blues.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_25.mp4",
+      "source_file_identifier": "mbrs00009301__the-memphis-belle-a-story-of-a-flying-fortress.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_26.mp4",
+      "source_file_identifier": "00694220__the-great-train-robbery.mp4",
+      "audio_dubbed": true
+    },
+    {
+      "file": "master_27.mp4",
+      "source_file_identifier": "mbrs00046435__within-our-gates.mp4",
+      "audio_dubbed": true
+    },
+    {
+      "file": "master_28.mp4",
+      "source_file_identifier": "mbrs00021068__the-middleton-family-at-the-new-york-worlds-fair.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_29.mp4",
+      "source_file_identifier": "mbrs00047382__the-hitch-hiker.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_30.mp4",
+      "source_file_identifier": "mbrs02023537__under-western-stars.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_31.mp4",
+      "source_file_identifier": "2017604960__all-my-babiesa-midwifes-own-story.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_32.mp4",
+      "source_file_identifier": "mbrs02425201__trance-and-dance-in-bali.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_33.mp4",
+      "source_file_identifier": "2017604960__all-my-babiesa-midwifes-own-story.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_34.mp4",
+      "source_file_identifier": "00694425__san-francisco-earthquake-and-fire-april-18-1906.mp4",
+      "audio_dubbed": true
+    },
+    {
+      "file": "master_35.mp4",
+      "source_file_identifier": "mbrs00046435__within-our-gates.mp4",
+      "audio_dubbed": true
+    },
+    {
+      "file": "master_36.mp4",
+      "source_file_identifier": "mbrs00045468__modesta.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_37.mp4",
+      "source_file_identifier": "00694220__the-great-train-robbery.mp4",
+      "audio_dubbed": true
+    },
+    {
+      "file": "master_38.mp4",
+      "source_file_identifier": "mbrs00068306__popeye-the-sailor-meets-sindbad-the-sailor.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_39.mp4",
+      "source_file_identifier": "mbrs00068306__popeye-the-sailor-meets-sindbad-the-sailor.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_40.mp4",
+      "source_file_identifier": "2017604960__all-my-babiesa-midwifes-own-story.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_41.mp4",
+      "source_file_identifier": "mbrs00021068__the-middleton-family-at-the-new-york-worlds-fair.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_42.mp4",
+      "source_file_identifier": "mbrs02297907__master-hands.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_43.mp4",
+      "source_file_identifier": "mbrs00045468__modesta.mp4",
+      "audio_dubbed": false
+    },
+    {
+      "file": "master_44.mp4",
+      "source_file_identifier": "mbrs00021068__the-middleton-family-at-the-new-york-worlds-fair.mp4",
+      "audio_dubbed": false
+    }
+  ],
+  "decoy_sources": [
+    {
+      "decoy_id": "decoy_00.mp4",
+      "source_file_identifier": "06fbbf73-8e2d-4f3a-baa7-12c8d6eb49fa1080p.mp4",
+      "kind": "absent_film",
+      "audio_dubbed": true
+    },
+    {
+      "decoy_id": "decoy_01.mp4",
+      "source_file_identifier": "2017604960__all-my-babiesa-midwifes-own-story.mp4",
+      "kind": "held_out_window",
+      "audio_dubbed": false
+    },
+    {
+      "decoy_id": "decoy_02.mp4",
+      "source_file_identifier": "7ad46143-7f7e-4569-9bb7-acaeb315820a1080p.mp4",
+      "kind": "absent_film",
+      "audio_dubbed": true
+    },
+    {
+      "decoy_id": "decoy_03.mp4",
+      "source_file_identifier": "96522104__panorama-of-machine-co-aisle-westinghouse-co-works.mp4",
+      "kind": "absent_film",
+      "audio_dubbed": true
+    },
+    {
+      "decoy_id": "decoy_04.mp4",
+      "source_file_identifier": "acf062ae-25e0-473c-9a5f-56871b2fab921080p.mp4",
+      "kind": "absent_film",
+      "audio_dubbed": false
+    },
+    {
+      "decoy_id": "decoy_05.mp4",
+      "source_file_identifier": "mbrs00009167__the-house-i-live-in.mp4",
+      "kind": "absent_film",
+      "audio_dubbed": false
+    },
+    {
+      "decoy_id": "decoy_06.mp4",
+      "source_file_identifier": "mbrs00009301__the-memphis-belle-a-story-of-a-flying-fortress.mp4",
+      "kind": "held_out_window",
+      "audio_dubbed": false
+    },
+    {
+      "decoy_id": "decoy_07.mp4",
+      "source_file_identifier": "mbrs00021068__the-middleton-family-at-the-new-york-worlds-fair.mp4",
+      "kind": "held_out_window",
+      "audio_dubbed": false
+    },
+    {
+      "decoy_id": "decoy_08.mp4",
+      "source_file_identifier": "mbrs00045468__modesta.mp4",
+      "kind": "held_out_window",
+      "audio_dubbed": false
+    },
+    {
+      "decoy_id": "decoy_09.mp4",
+      "source_file_identifier": "mbrs00047382__the-hitch-hiker.mp4",
+      "kind": "held_out_window",
+      "audio_dubbed": false
+    },
+    {
+      "decoy_id": "decoy_10.mp4",
+      "source_file_identifier": "mbrs01836081__duck-and-cover.mp4",
+      "kind": "absent_film",
+      "audio_dubbed": false
+    },
+    {
+      "decoy_id": "decoy_11.mp4",
+      "source_file_identifier": "mbrs02023537__under-western-stars.mp4",
+      "kind": "held_out_window",
+      "audio_dubbed": false
+    },
+    {
+      "decoy_id": "decoy_12.mp4",
+      "source_file_identifier": "mbrs02297907__master-hands.mp4",
+      "kind": "held_out_window",
+      "audio_dubbed": false
+    }
+  ]
+}

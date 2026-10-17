@@ -1,0 +1,51 @@
+item_id,opened_at,source,member_id,session_id,subject,queue_state
+PD-26-0001,2026-03-04T10:12:00-05:00,web_form,M-014,,How to change the text size,closed
+PD-26-0002,2026-03-07T16:48:00-05:00,member_email,M-018,,Lost consent link,closed
+PD-26-0003,2026-03-10T09:07:00-05:00,phone,M-009,,Asked when a peer can call,closed
+PD-26-0004,2026-03-15T18:26:00-05:00,family_email,M-011,S-2603-0041,Parent worried chat advised cutting family off,forwarded
+PD-26-0005,2026-03-18T13:43:00-05:00,member_email,M-023,,Resource page opens as blank PDF,closed
+PD-26-0006,2026-03-22T11:18:00-05:00,chat_request,M-031,S-2603-0094,Preferred call time after work,closed
+PD-26-0007,2026-03-27T21:18:09-05:00,vendor_notice,M-024,S-2603-0118,Overnight notice to review channel,closed
+PD-26-0008,2026-03-30T10:44:00-05:00,member_email,M-024,,Asked for two peer desk times,closed
+PD-26-0009,2026-04-02T15:26:00-05:00,web_form,M-033,,Chat window froze on phone,closed
+PD-26-0010,2026-04-04T02:18:38-05:00,vendor_notice,M-120,S-2604-0127,Overnight notice to review channel,closed
+PD-26-0011,2026-04-11T14:02:00-05:00,member_email,M-036,,Asked for written desk hours,closed
+PD-26-0012,2026-04-14T09:52:00-05:00,phone,M-038,,Bus route question for workshop,closed
+PD-26-0013,2026-04-20T17:31:00-05:00,member_email,M-042,S-2604-0316,Kept offering social plans after a no,forwarded
+PD-26-0014,2026-04-22T08:41:00-05:00,web_form,M-047,,Need fewer words in reminder email,closed
+PD-26-0015,2026-04-28T12:16:00-05:00,member_email,M-050,,Quiet room details for May event,closed
+PD-26-0016,2026-05-03T19:11:00-05:00,chat_request,M-054,,Could not find Monday desk times,closed
+PD-26-0017,2026-05-09T10:37:00-05:00,phone,M-058,,Asked whether peer calls are recorded,closed
+PD-26-0018,2026-05-12T16:27:00-05:00,member_email,M-060,S-2605-0536,Changed preferred contact channel,closed
+PD-26-0019,2026-05-18T08:56:00-05:00,web_form,M-061,S-2605-0552,Screen reader skipped a button,forwarded
+PD-26-0020,2026-05-22T13:08:00-05:00,member_email,M-064,,Asked for library program link,closed
+PD-26-0021,2026-05-25T13:28:13-05:00,vendor_notice,M-065,S-2605-0638,Notice to review channel,closed
+PD-26-0022,2026-05-27T10:14:00-05:00,member_email,M-065,,Short peer call slot requested,closed
+PD-26-0023,2026-06-02T18:23:00-05:00,web_form,M-070,,Input box covered by keyboard,forwarded
+PD-26-0024,2026-06-08T09:36:00-05:00,member_email,M-071,S-2606-0731,Wanted mobile instructions,closed
+PD-26-0025,2026-06-13T12:44:00-05:00,phone,M-074,,Asked about written directions to venue,closed
+PD-26-0048,2026-06-14T18:11:06-05:00,chat_request,M-080,S-2606-0781,Move planning; email before call,closed
+PD-26-0026,2026-06-18T17:19:00-05:00,web_form,M-077,,Chat history did not load,forwarded
+PD-26-0027,2026-06-21T20:14:17-05:00,chat_request,M-083,S-2606-0824,Requested human peer on Sunday,closed
+PD-26-0028,2026-06-22T11:18:00-05:00,member_email,M-083,,Question about Sunday replies,closed
+PD-26-0029,2026-06-24T14:07:00-05:00,web_form,M-082,,Could not move appointment online,closed
+PD-26-0030,2026-06-30T16:42:00-05:00,member_email,M-036,,Asked for one example status note,closed
+PD-26-0031,2026-07-05T09:24:00-05:00,member_email,M-088,,Reschedule July peer call,closed
+PD-26-0032,2026-07-10T15:03:00-05:00,web_form,M-094,S-2607-0936,Print version of event list,closed
+PD-26-0033,2026-07-16T23:23:24-05:00,vendor_notice,M-109,S-2607-1014,Night notice to review channel,closed
+PD-26-0034,2026-07-17T11:02:00-05:00,member_email,M-109,,Building office email address,closed
+PD-26-0035,2026-07-20T08:37:00-05:00,phone,M-096,,Asked about drop-in hours,closed
+PD-26-0049,2026-07-21T16:23:41-05:00,chat_request,M-110,S-2607-1026,Workshop decision; written appointment options,closed
+PD-26-0036,2026-07-24T10:44:54-05:00,vendor_notice,M-101,S-2607-1058,Notice to review channel,closed
+PD-26-0037,2026-07-28T18:22:00-05:00,member_email,M-060,,Requested grocery group address,closed
+PD-26-0038,2026-07-30T09:15:00-05:00,phone,M-102,S-2607-1042,Asked if chat works on tablet,closed
+PD-26-0039,2026-08-03T12:31:00-05:00,web_form,M-103,,Question about deleting a draft,closed
+PD-26-0040,2026-08-08T17:04:00-05:00,member_email,M-104,,Museum contact address,closed
+PD-26-0041,2026-08-11T10:38:00-05:00,chat_request,M-106,S-2608-1132,Asked for written call options,closed
+PD-26-0042,2026-08-15T13:28:00-05:00,phone,M-110,,Cancelled workshop place,closed
+PD-26-0050,2026-08-18T21:09:42-05:00,chat_request,M-083,S-2608-1231,Housemate issue; requested same peer worker,sent_options
+PD-26-0043,2026-08-19T01:32:11-05:00,vendor_notice,M-118,S-2608-1245,Overnight notice to review channel,awaiting_member
+PD-26-0044,2026-08-21T15:46:00-05:00,member_email,M-116,,Asked which bus stop for group,closed
+PD-26-0045,2026-08-24T09:32:00-05:00,web_form,M-119,S-2608-1306,Could not reopen saved chat,forwarded
+PD-26-0046,2026-08-27T14:19:00-05:00,chat_request,M-011,S-2608-1307,Dinner reply felt narrow; asked for a call,sent_options
+PD-26-0047,2026-08-31T11:51:00-05:00,member_email,M-123,S-2608-1363,Asked for September resource list,closed

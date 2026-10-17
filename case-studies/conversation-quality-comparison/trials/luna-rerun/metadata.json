@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "public_trial_id": "cq-luna-rerun",
+  "status": "primary",
+  "run_date_local": "2026-10-15",
+  "report_run": {
+    "application": "OpenCode",
+    "version": "2.0.29",
+    "separate_instance": true,
+    "provider": "openrouter",
+    "model_route": "openai/gpt-6-luna",
+    "prompt_sha256": "94abc04b06eb768208fab4aff82f840963302c4de0c09bd6247dc4515c7bd15d",
+    "private_context_aggregate_sha256": "41bfe58c56a28d58f9814d6186e24f6e5ba635b5bdaa01ad65c644840ed9ff73",
+    "source_report_sha256": "9b8fad226579b1280dc47cdea8291b456bb62ee2e3282cb6a89ecabde83be0ae",
+    "published_report_sha256": "9b8fad226579b1280dc47cdea8291b456bb62ee2e3282cb6a89ecabde83be0ae"
+  },
+  "evaluation_run": {
+    "application": "OpenCode",
+    "version": "2.0.29",
+    "separate_instance": true,
+    "provider": "openrouter",
+    "model_route": "z-ai/glm-5.3",
+    "variant": "high",
+    "answer_key_revision": 1,
+    "source_evaluation_sha256": "aefadcda749851c7fcafe929f210e215658d37a8fcdeed6ce5d72cedd53b9ee4",
+    "published_evaluation_sha256": "aefadcda749851c7fcafe929f210e215658d37a8fcdeed6ce5d72cedd53b9ee4"
+  },
+  "excluded": [
+    "OpenCode configuration and state",
+    "credentials",
+    "local paths",
+    "local databases and caches",
+    "token, cost, and machine records"
+  ]
+}

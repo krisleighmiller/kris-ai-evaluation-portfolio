@@ -1,0 +1,34 @@
+From: "Theo Grant" <theo.grant@lanternbridge.example>
+To: "Avery Bell" <avery.bell@cedarvale.example>
+Cc: "Nina Patel" <nina.patel@cedarvale.example>
+Date: Thu, 18 Jun 2026 07:14:00 -0500
+Subject: Re: Cedar Vale Chat June release notice
+Message-ID: <cvc-20260618-0714@lanternbridge.example>
+In-Reply-To: <cvas-20260610-1603@cedarvale.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+Morning Avery,
+
+CVC-1.5 went live for Cedar Vale Chat at 06:42 CT today. The admin view now shows that release for new sessions. The peer desk hours, the CVAS safety notification channel, and the data-use settings are unchanged. We will include the release in June's service packet.
+
+If your team sees an unexpected handoff or urgent-help line, please send me the session ID and time so we can look at the rendered exchange.
+
+Theo
+
+On Wed, 10 Jun 2026 at 16:03 -0500, Avery Bell wrote:
+> Theo,
+>
+> CVAS approves CVC-1.5 for the proposed June 18 rollout. Please keep the current peer desk hours and crisis-resource wording in place, and confirm when the production switch is complete. I will brief the desk at tomorrow's huddle.
+>
+> Avery
+>
+> On Fri, 29 May 2026 at 10:32 -0500, Theo Grant wrote:
+> > Avery,
+> >
+> > This is LBD's advance notice for a material Cedar Vale Chat change planned for June 18, between 06:00 and 08:00 CT. CVC-1.5 replaces the CVC-1.4 response model configuration and updates the high-risk detection rules and fallback response path. It also changes the default reply length and how options are presented after a member asks for a concrete next step.
+> >
+> > The service remains an AI peer-style support tool for adults. This release does not change member eligibility, the CVAS review channel, human desk hours, the 988/urgent-help path, or our conversation data-use restrictions. We are running the release through our staging checks against the CVAS behavior schedule before deployment. Please reply with approval or any changes you need by June 12 so we can hold the rollout window.
+> >
+> > Theo Grant
+> > Delivery Manager, Lantern Bridge Digital

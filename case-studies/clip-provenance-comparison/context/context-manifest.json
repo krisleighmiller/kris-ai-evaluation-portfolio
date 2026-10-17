@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "release_tag": "v1.0.0",
+  "asset_name": "clip-provenance-context-v1.0.0.zip",
+  "asset_bytes": 439756510,
+  "asset_sha256": "443485fd0fec0f18b7eb52d1f0765d4ed7b12ff2cd3c1a021708c98c1899840d",
+  "archive_root": "clip-provenance-context-v1.0.0",
+  "archive_contents": [
+    "masters/",
+    "clips/"
+  ],
+  "master_files": 45,
+  "master_bytes": 295289919,
+  "master_set_sha256": "3c6d9999d0dab1e5a62de2336cf87f31f1dba561cbfde6ffd71caebe296cc37d",
+  "clip_files": 200,
+  "clip_bytes": 144410331,
+  "clip_set_sha256": "31ad405df9948ec2b6bffff39d5765a65f0ec23effa5057164ed3f3f240a3cb4",
+  "media_files": 245,
+  "media_bytes": 439700250,
+  "per_file_manifest": "context-files.tsv",
+  "sha256_check_file": "files.sha256",
+  "shared_prompt_sha256": "c1f616929a52aa7b379ee968b3e9a3aa48da8c7952aec4f2e5d6a4a14e208a4d",
+  "source_provenance": "SOURCE_PROVENANCE.md",
+  "nonstandard_embedded_metadata_files": 0,
+  "archive_integrity_test": "passed",
+  "extracted_checksum_files_ok": 245
+}

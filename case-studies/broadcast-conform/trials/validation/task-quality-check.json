@@ -1,0 +1,55 @@
+{
+  "results": [
+    {
+      "checks": {
+        "behavior_in_task_description": {
+          "explanation": "The instruction explicitly references delivery_spec.json and timeline.json as authoritative and states every field is a hard requirement. Both JSON files collectively describe all tested behavior — container, codec, resolution, colorimetry, loudness, AV sync, padding, etc. The instruction also explicitly states the master must be written to /app/master.mp4 and that input files must be left byte-for-byte unchanged.",
+          "outcome": "pass"
+        },
+        "behavior_in_tests": {
+          "explanation": "Tests cover all important behavior described in the instruction and spec: deliverable existence, input integrity, stream properties (container brand, codec, dimensions, SAR, color tags, scan type), CFR/duration, keyframe interval, limited-range levels, patch colorimetry, segment content and cut placement, padding, AV sync, no synthesized frames, beep spacing, audio provenance, program loudness, and segment loudness. Coverage is comprehensive.",
+          "outcome": "pass"
+        },
+        "informative_test_structure": {
+          "explanation": "Each test function has a clear docstring explaining what it checks, which spec requirement it maps to, and how it works. Tests are grouped by concern and named descriptively. The helper library qc_lib.py is well-commented and organized. The structure is clear and maintainable.",
+          "outcome": "pass"
+        },
+        "anti_cheating_measures": {
+          "explanation": "The solution and tests are not present in the agent image (environment/Dockerfile only copies footage and the two JSON files). ground_truth.json and input_hashes.json are in tests/ which the agent cannot access. The delivery_spec.json in the agent environment is a leaner copy without the specific defect disclosures present in the tests copy. The media files are raw source footage, not pre-processed. The instruction includes an anti-cheating clause. No answers are embedded in the environment.",
+          "outcome": "pass"
+        },
+        "structured_data_schema": {
+          "explanation": "The delivery_spec.json documents the exact schema for the output MP4: container brand, video codec (h264), dimensions (1920x1080), SAR (1:1), frame rate (30/1), pixel format (yuv420p), color tags, keyframe interval, audio codec/sample rate/channels, loudness targets with tolerances, and source interpretation rules. The schema is explicit, not just examples.",
+          "outcome": "pass"
+        },
+        "pinned_dependencies": {
+          "explanation": "The agent environment uses only apt packages (ffmpeg, python3, python3-numpy). No pip packages are installed in the agent image. apt packages generally need not be pinned per the guidance. The tests image does pin pip packages (pytest==9.1.1, pytest-json-ctrf==0.5.2, numpy==2.5.2).",
+          "outcome": "pass"
+        },
+        "typos": {
+          "explanation": "No typos found in filenames, paths, commands, or variable names across instruction.md, task.toml, solve.py, solve.sh, test_outputs.py, test.sh, qc_lib.py, and both Dockerfiles. All function names, flag names, and file references are correct.",
+          "outcome": "pass"
+        },
+        "tests_or_solution_in_image": {
+          "explanation": "The environment Dockerfile only copies data/footage, data/delivery_spec.json, and data/timeline.json into the agent image. The solution/ directory and tests/ directory are not copied into the runtime build.",
+          "outcome": "pass"
+        },
+        "test_deps_in_image": {
+          "explanation": "Test-only dependencies (pytest, pytest-json-ctrf) are installed only in the tests/Dockerfile, not in the agent environment image. The agent image only contains runtime dependencies needed for the conform task (ffmpeg, python3, numpy).",
+          "outcome": "pass"
+        },
+        "hardcoded_solution": {
+          "explanation": "The solution (solve.py) is a 390-line script that probes each source, measures colorimetry by decoding frames, measures audio timebase from flash/beep markers, conforms with proper color/range conversions and pixel aspect ratio resolution, levels audio per-segment via EBU R128, and assembles with x264. It derives everything from the source files and the two JSON spec documents rather than echoing a pre-computed answer.",
+          "outcome": "pass"
+        },
+        "file_reference_mentioned": {
+          "explanation": "The instruction explicitly states the output must be written to /app/master.mp4. The delivery_spec.json also specifies the path. The instruction mentions the footage directory (/app/footage), timeline.json (/app/timeline.json), and delivery_spec.json (/app/delivery_spec.json). All files tested for integrity are referenced.",
+          "outcome": "pass"
+        }
+      },
+      "cost_usd": 0.0268035168,
+      "task_name": "",
+      "error": null
+    }
+  ]
+}

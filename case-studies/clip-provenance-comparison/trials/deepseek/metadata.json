@@ -1,0 +1,11 @@
+{
+  "platform": "OpenCode",
+  "platform_version": "2.0.29",
+  "agent": "build",
+  "provider": "openrouter",
+  "model_route": "deepseek/deepseek-v4-pro-0813",
+  "started_utc": "2026-10-15T18:35:48Z",
+  "last_updated_utc": "2026-10-15T18:52:09Z",
+  "run_isolation": "separate instance with a byte-identical private copy of the shared context",
+  "status": "completed"
+}

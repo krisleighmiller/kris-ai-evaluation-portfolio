@@ -1,0 +1,602 @@
+#!/usr/bin/env python3
+"""Benchmark four installed ELF linkers over one captured final link.
+
+Runs as: /app/linkbench <workload-directory> <report-json>
+
+For every scheduled link the harness runs the manifest's compiler driver
+under strace, times the complete driver process with a monotonic clock, and
+works out which linker really ran from the execve events the driver
+performed (never from the -fuse-ld selector).  The linker that performed a
+link is the process whose thread group created the fresh output file.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+
+LINKERS = ("bfd", "gold", "lld", "mold")
+THREAD_ARGS = {
+    "bfd": [],
+    "gold": ["-Wl,--threads", "-Wl,--thread-count=2"],
+    "lld": ["-Wl,--threads=2"],
+    "mold": ["-Wl,--threads=2", "-Wl,--no-fork"],
+}
+EFFECTIVE_THREADS = {"bfd": 1, "gold": 2, "lld": 2, "mold": 2}
+TRACE_SET = (
+    "execve,openat,openat2,open,creat,rename,renameat,renameat2,"
+    "clone,clone3,fork,vfork"
+)
+# Older strace builds may not know the openat2/clone3 names; the core set
+# is enough because the parser simply never sees those events then.
+BASE_TRACE_SET = (
+    "execve,openat,open,creat,rename,renameat,renameat2,clone,fork,vfork"
+)
+# Classification markers for a --version first nonempty line, in the exact
+# order they must be tested (case-insensitive substring match).
+VERSION_MARKERS = (
+    ("mold", "mold"),
+    ("gnu gold", "gold"),
+    ("lld", "lld"),
+    ("gnu ld", "bfd"),
+)
+LINK_TIMEOUT = 600.0
+PROBE_TIMEOUT = 30.0
+VERSION_TIMEOUT = 20.0
+
+
+class HarnessError(RuntimeError):
+    """The benchmark could not complete a required step."""
+
+
+def log(message: str) -> None:
+    print(f"linkbench: {message}", file=sys.stderr, flush=True)
+
+
+def first_nonempty_line(text: str) -> str:
+    for line in text.splitlines():
+        if line.strip():
+            return line
+    return ""
+
+
+def classify_version(line: str):
+    low = line.lower()
+    for marker, family in VERSION_MARKERS:
+        if marker in low:
+            return family
+    return None
+
+
+def validate_order(value, label: str):
+    if (
+        not isinstance(value, list)
+        or len(value) != 4
+        or any(item not in LINKERS for item in value)
+        or len(set(value)) != 4
+    ):
+        raise HarnessError(f"{label} must contain each of the four linker IDs")
+    return value
+
+
+def load_workload(workload_dir: str):
+    manifest_path = os.path.join(workload_dir, "workload.json")
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+    except FileNotFoundError as exc:
+        raise HarnessError(f"workload manifest not found: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise HarnessError(f"workload manifest is not valid JSON: {exc}") from exc
+    if not isinstance(manifest, dict):
+        raise HarnessError("workload manifest must be a JSON object")
+    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
+        raise HarnessError("unsupported workload schema")
+    workload_id = manifest.get("workload_id")
+    if not isinstance(workload_id, str) or not workload_id:
+        raise HarnessError("workload_id is missing")
+    driver = manifest.get("driver")
+    if not isinstance(driver, str) or not os.path.isabs(driver):
+        raise HarnessError("driver must be an absolute path")
+    response_value = manifest.get("response_file")
+    if (
+        not isinstance(response_value, str)
+        or not response_value
+        or os.path.isabs(response_value)
+        or any(part in ("", "..") for part in response_value.split("/"))
+    ):
+        raise HarnessError("response_file must be a safe relative path")
+    response = os.path.join(workload_dir, response_value)
+    if not os.path.isfile(response):
+        raise HarnessError(f"response file does not exist: {response}")
+    validate_order(manifest.get("warmup_order"), "warmup_order")
+    rounds = manifest.get("timed_rounds")
+    if not isinstance(rounds, list) or len(rounds) != 5:
+        raise HarnessError("timed_rounds must contain five rounds")
+    for index, order in enumerate(rounds):
+        validate_order(order, f"timed_rounds[{index}]")
+    probe = manifest.get("probe")
+    if not isinstance(probe, dict):
+        raise HarnessError("probe is missing")
+    argv = probe.get("argv")
+    if not isinstance(argv, list) or not argv or not all(
+        isinstance(item, str) for item in argv
+    ):
+        raise HarnessError("probe.argv must be a nonempty array of strings")
+    if type(probe.get("expected_returncode")) is not int:
+        raise HarnessError("probe.expected_returncode must be an integer")
+    if not isinstance(probe.get("expected_stdout"), str):
+        raise HarnessError("probe.expected_stdout must be a string")
+    if not isinstance(probe.get("expected_stderr"), str):
+        raise HarnessError("probe.expected_stderr must be a string")
+    return manifest, response
+
+
+# ---------------------------------------------------------------------------
+# strace log analysis
+# ---------------------------------------------------------------------------
+
+_LINE_RE = re.compile(r"^(\d+)\s+(.*)$")
+_CALL_RE = re.compile(r"^([a-z0-9_]+)\((.*)$", re.DOTALL)
+_RESUMED_RE = re.compile(r"^<\.\.\. ([a-z0-9_]+) resumed>(.*)$", re.DOTALL)
+_RET_RE = re.compile(r"\)\s*=\s*(-?[0-9a-zA-Z?]+)")
+_QUOTE_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')
+_UNFINISHED_SUFFIX = " <unfinished ...>"
+
+_ESCAPES = {"a": 7, "b": 8, "t": 9, "n": 10, "v": 11, "f": 12, "r": 13}
+
+
+def unquote(text: str) -> str:
+    """Undo strace's C-style string escaping."""
+    out = []
+    i = 0
+    n = len(text)
+    while i < n:
+        char = text[i]
+        if char == "\\" and i + 1 < n:
+            nxt = text[i + 1]
+            if nxt in "01234567":
+                j = i + 1
+                while j < n and j < i + 4 and text[j] in "01234567":
+                    j += 1
+                out.append(chr(int(text[i + 1 : j], 8)))
+                i = j
+                continue
+            if nxt == "x" and i + 3 < n:
+                try:
+                    out.append(chr(int(text[i + 2 : i + 4], 16)))
+                    i += 4
+                    continue
+                except ValueError:
+                    pass
+            out.append(chr(_ESCAPES.get(nxt, 0)) if nxt in _ESCAPES else nxt)
+            i += 2
+        else:
+            out.append(char)
+            i += 1
+    return "".join(out)
+
+
+def parse_trace(trace_log: str, output: str) -> str:
+    """Return the verbatim execve path of the process that created output."""
+    image_hist = {}  # tid -> [(seq, execve path)]
+    spawns = []  # (seq, tid, child, threaded)
+    out_events = []  # (seq, tid)
+    pending = {}
+    try:
+        handle = open(trace_log, "r", encoding="utf-8", errors="replace")
+    except OSError as exc:
+        raise HarnessError(f"cannot read trace log: {exc}") from exc
+    with handle:
+        for seq, raw in enumerate(handle):
+            match = _LINE_RE.match(raw)
+            if not match:
+                continue
+            tid = int(match.group(1))
+            rest = match.group(2)
+            if rest.startswith("+++") or rest.startswith("---"):
+                continue
+            call = _CALL_RE.match(rest)
+            if call:
+                name = call.group(1)
+                tail = call.group(2)
+                if rest.endswith(_UNFINISHED_SUFFIX):
+                    pending[tid] = (name, tail[: -len(_UNFINISHED_SUFFIX)])
+                    continue
+                argret = tail
+            else:
+                resumed = _RESUMED_RE.match(rest)
+                if not resumed:
+                    continue
+                name = resumed.group(1)
+                if tid in pending:
+                    name, head = pending.pop(tid)
+                    argret = head + resumed.group(2)
+                else:
+                    # The unfinished half is unavailable; without the call
+                    # arguments the event is unusable.
+                    continue
+            returns = list(_RET_RE.finditer(argret))
+            if not returns:
+                continue
+            final = returns[-1]
+            args = argret[: final.start()]
+            ret = final.group(1)
+            if name == "execve":
+                if ret == "0":
+                    quoted = _QUOTE_RE.search(args)
+                    if quoted:
+                        image_hist.setdefault(tid, []).append(
+                            (seq, unquote(quoted.group(1)))
+                        )
+            elif name in ("fork", "vfork", "clone", "clone3"):
+                if ret.isdigit():
+                    child = int(ret)
+                    if child > 0:
+                        spawns.append((seq, tid, child, "CLONE_THREAD" in args))
+            elif name in ("open", "openat", "openat2", "creat"):
+                if ret[0].isdigit():
+                    quoted = _QUOTE_RE.search(args)
+                    if quoted and unquote(quoted.group(1)) == output:
+                        creates = name == "creat"
+                        if not creates:
+                            remainder = args[quoted.end() :]
+                            parts = remainder.split(",")
+                            flags = parts[1] if len(parts) > 1 else ""
+                            creates = "O_CREAT" in flags and (
+                                "O_WRONLY" in flags or "O_RDWR" in flags
+                            )
+                        if creates:
+                            out_events.append((seq, tid))
+            elif name in ("rename", "renameat", "renameat2"):
+                if ret == "0":
+                    quoted = _QUOTE_RE.findall(args)
+                    if quoted and unquote(quoted[-1]) == output:
+                        out_events.append((seq, tid))
+
+    parent = {}
+
+    def find(node):
+        root = node
+        while parent[root] != root:
+            root = parent[root]
+        while parent[node] != root:
+            parent[node], node = root, parent[node]
+        return root
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[rb] = ra
+
+    for tid in image_hist:
+        parent.setdefault(tid, tid)
+    for seq, tid in out_events:
+        parent.setdefault(tid, tid)
+    for seq, tid, child, threaded in spawns:
+        parent.setdefault(tid, tid)
+        parent.setdefault(child, child)
+        if threaded:
+            union(tid, child)
+        # A forked child starts life running the program image its parent
+        # had execve'd, unless it goes on to execve something else itself.
+        if not image_hist.get(child):
+            image_hist[child] = [
+                (s, p) for s, p in image_hist.get(tid, []) if s <= seq
+            ]
+
+    if not out_events:
+        raise HarnessError("no process created the link output")
+    out_seq, out_tid = max(out_events)
+    root = find(out_tid)
+    best = None
+    for tid, history in image_hist.items():
+        if find(tid) != root:
+            continue
+        for seq, path in history:
+            if seq <= out_seq and (best is None or seq > best[0]):
+                best = (seq, path)
+    if best is None:
+        raise HarnessError("no execve event for the process that linked")
+    invoked_path = best[1]
+    if not invoked_path.startswith("/"):
+        raise HarnessError(f"linker path is not absolute: {invoked_path!r}")
+    return invoked_path
+
+
+# ---------------------------------------------------------------------------
+# subprocess steps
+# ---------------------------------------------------------------------------
+
+
+def make_environment(scratch_tmp: str) -> dict:
+    env = os.environ.copy()
+    env.update(
+        {
+            "TMPDIR": scratch_tmp,
+            "TMP": scratch_tmp,
+            "TEMP": scratch_tmp,
+            "LC_ALL": "C",
+            "LANG": "C",
+        }
+    )
+    return env
+
+
+def strace_supports(strace, trace_set) -> bool:
+    try:
+        return (
+            subprocess.run(
+                [strace, "-e", f"trace={trace_set}", "/bin/true"],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=15.0,
+            ).returncode
+            == 0
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+def pick_trace_set(strace) -> str:
+    if strace_supports(strace, TRACE_SET):
+        return TRACE_SET
+    if strace_supports(strace, BASE_TRACE_SET):
+        return BASE_TRACE_SET
+    raise HarnessError("strace cannot trace the required syscalls")
+
+
+def run_link(strace, trace_set, manifest, response, linker, output, trace_log, workload, env):
+    command = [
+        strace,
+        "-f",
+        "-s",
+        "4096",
+        "-e",
+        f"trace={trace_set}",
+        "-o",
+        trace_log,
+        manifest["driver"],
+        f"-fuse-ld={linker}",
+        *THREAD_ARGS[linker],
+        f"@{response}",
+        "-o",
+        output,
+    ]
+    started = time.monotonic_ns()
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=workload,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=LINK_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise HarnessError(f"{linker} link timed out") from exc
+    elapsed = time.monotonic_ns() - started
+    if completed.returncode != 0:
+        detail = completed.stderr.decode("utf-8", "replace")[-400:]
+        raise HarnessError(
+            f"{linker} link exited with status {completed.returncode}: {detail}"
+        )
+    invoked_path = parse_trace(trace_log, output)
+    if elapsed <= 0:
+        raise HarnessError("monotonic clock did not advance during the link")
+    return elapsed, invoked_path
+
+
+def run_version_probe(invoked_path: str, workload: str, env: dict):
+    try:
+        completed = subprocess.run(
+            [invoked_path, "--version"],
+            cwd=workload,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=VERSION_TIMEOUT,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise HarnessError(f"cannot run {invoked_path} --version: {exc}") from exc
+    if completed.returncode != 0:
+        raise HarnessError(f"{invoked_path} --version exited {completed.returncode}")
+    text = completed.stdout.decode("utf-8", "replace")
+    line = first_nonempty_line(text)
+    if not line:
+        raise HarnessError(f"{invoked_path} --version produced no output line")
+    family = classify_version(line)
+    if family is None:
+        raise HarnessError(f"cannot classify version line of {invoked_path}: {line!r}")
+    return line, family
+
+
+def check_output_file(output: str) -> None:
+    try:
+        mode = os.lstat(output).st_mode
+    except OSError as exc:
+        raise HarnessError(f"link output was not created: {exc}") from exc
+    if not stat.S_ISREG(mode):
+        raise HarnessError(f"link output is not a regular file: {output}")
+
+
+def run_probe(manifest, output: str, workload: str, env: dict) -> None:
+    probe = manifest["probe"]
+    argv = [output if item == "{output}" else item for item in probe["argv"]]
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=workload,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=PROBE_TIMEOUT,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise HarnessError(f"manifest probe could not start: {exc}") from exc
+    if completed.returncode != probe["expected_returncode"]:
+        raise HarnessError(
+            f"manifest probe exited {completed.returncode}, "
+            f"expected {probe['expected_returncode']}"
+        )
+    if completed.stdout != probe["expected_stdout"].encode("utf-8"):
+        raise HarnessError("manifest probe stdout mismatch")
+    if completed.stderr != probe["expected_stderr"].encode("utf-8"):
+        raise HarnessError("manifest probe stderr mismatch")
+
+
+def remove_existing_report(report_path: str) -> None:
+    try:
+        os.unlink(report_path)
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        raise HarnessError(f"cannot remove existing report: {exc}") from exc
+
+
+# ---------------------------------------------------------------------------
+# top-level orchestration
+# ---------------------------------------------------------------------------
+
+
+def benchmark(workload_arg: str, report_path: str) -> None:
+    remove_existing_report(report_path)
+    workload = os.path.abspath(workload_arg)
+    manifest, response = load_workload(workload)
+    strace = shutil.which("strace")
+    if not strace:
+        raise HarnessError("strace is not available")
+    trace_set = pick_trace_set(strace)
+
+    with tempfile.TemporaryDirectory(prefix="linkbench-") as scratch:
+        scratch_tmp = os.path.join(scratch, "tmp")
+        os.mkdir(scratch_tmp)
+        env = make_environment(scratch_tmp)
+        observed = {}
+        sequence = 0
+
+        def scheduled_link(linker: str, timed: bool) -> None:
+            nonlocal sequence
+            output = os.path.join(scratch, f"out-{linker}-{sequence}")
+            trace_log = os.path.join(scratch, f"trace-{linker}-{sequence}.log")
+            sequence += 1
+            try:
+                os.unlink(output)
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                raise HarnessError(f"cannot remove output before link: {exc}") from exc
+            elapsed, invoked_path = run_link(
+                strace,
+                trace_set,
+                manifest,
+                response,
+                linker,
+                output,
+                trace_log,
+                workload,
+                env,
+            )
+            record = observed.get(linker)
+            if record is None:
+                version, family = run_version_probe(invoked_path, workload, env)
+                if family != linker:
+                    raise HarnessError(
+                        f"linker identity mismatch: requested {linker} but "
+                        f"{invoked_path} is {family} ({version!r})"
+                    )
+                observed[linker] = {
+                    "invoked_path": invoked_path,
+                    "version": version,
+                    "samples": [],
+                }
+            elif invoked_path != record["invoked_path"]:
+                raise HarnessError(
+                    f"{linker} used a different linker path: "
+                    f"{invoked_path!r} != {record['invoked_path']!r}"
+                )
+            check_output_file(output)
+            run_probe(manifest, output, workload, env)
+            if timed:
+                observed[linker]["samples"].append(elapsed)
+
+        for linker in manifest["warmup_order"]:
+            scheduled_link(linker, timed=False)
+        for round_order in manifest["timed_rounds"]:
+            for linker in round_order:
+                scheduled_link(linker, timed=True)
+
+    results = []
+    medians = {}
+    for linker in LINKERS:
+        samples = observed[linker]["samples"]
+        median = sorted(samples)[2]
+        medians[linker] = median
+        results.append(
+            {
+                "linker": linker,
+                "invoked_path": observed[linker]["invoked_path"],
+                "version": observed[linker]["version"],
+                "effective_threads": EFFECTIVE_THREADS[linker],
+                "samples_ns": samples,
+                "median_ns": median,
+            }
+        )
+    ranking = sorted(LINKERS, key=lambda linker: medians[linker])
+    report = {
+        "schema_version": 1,
+        "workload_id": manifest["workload_id"],
+        "results": results,
+        "ranking": ranking,
+    }
+    report_dir = os.path.dirname(os.path.abspath(report_path))
+    os.makedirs(report_dir, exist_ok=True)
+    fd, temp_report = tempfile.mkstemp(
+        dir=report_dir, prefix=".linkbench-report-", suffix=".tmp"
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(report, handle, indent=2)
+            handle.write("\n")
+        os.chmod(temp_report, 0o644)
+        os.replace(temp_report, report_path)
+    except BaseException:
+        try:
+            os.unlink(temp_report)
+        except OSError:
+            pass
+        raise
+    log(f"wrote report to {report_path}")
+
+
+def main() -> int:
+    if len(sys.argv) != 3:
+        print(
+            "usage: /app/linkbench <workload-directory> <report-json>",
+            file=sys.stderr,
+        )
+        return 2
+    try:
+        benchmark(sys.argv[1], sys.argv[2])
+    except HarnessError as exc:
+        log(str(exc))
+        return 1
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        log(f"unexpected failure: {exc}")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,284 @@
+#!/usr/bin/env python3
+"""Replay a captured final driver link, observing and timing every invocation."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+
+LINKERS = ("bfd", "gold", "lld", "mold")
+THREAD_ARGS = {
+    "bfd": [],
+    "gold": ["-Wl,--threads", "-Wl,--thread-count=2"],
+    "lld": ["-Wl,--threads=2"],
+    "mold": ["-Wl,--threads=2", "-Wl,--no-fork"],
+}
+HEX_STRING = re.compile(r'"((?:\\x[0-9a-fA-F]{2})*)"')
+
+
+class HarnessError(RuntimeError):
+    pass
+
+
+def require(condition, message):
+    if not condition:
+        raise HarnessError(message)
+
+
+def run(command, *, cwd, environment, timeout=120):
+    try:
+        return subprocess.run(
+            command, cwd=cwd, env=environment, timeout=timeout,
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise HarnessError(f"cannot run {command!r}: {exc}") from exc
+
+
+def validate_order(order, label):
+    require(isinstance(order, list) and len(order) == 4
+            and all(isinstance(item, str) for item in order)
+            and set(order) == set(LINKERS),
+            f"{label} must contain each linker exactly once")
+
+
+def load_workload(workload):
+    manifest = json.loads((workload / "workload.json").read_text("utf-8"))
+    require(isinstance(manifest, dict), "manifest must be an object")
+    require(type(manifest.get("schema_version")) is int
+            and manifest["schema_version"] == 1, "unsupported workload schema")
+    require(isinstance(manifest.get("workload_id"), str)
+            and manifest["workload_id"], "missing workload_id")
+    require(isinstance(manifest.get("driver"), str)
+            and os.path.isabs(manifest["driver"]), "driver must be absolute")
+    validate_order(manifest.get("warmup_order"), "warmup_order")
+    rounds = manifest.get("timed_rounds")
+    require(isinstance(rounds, list) and len(rounds) == 5,
+            "timed_rounds must contain five rounds")
+    for index, order in enumerate(rounds):
+        validate_order(order, f"timed_rounds[{index}]")
+    response_name = manifest.get("response_file")
+    require(isinstance(response_name, str) and response_name
+            and not os.path.isabs(response_name)
+            and ".." not in Path(response_name).parts, "unsafe response_file")
+    response = (workload / response_name).resolve()
+    require(response.is_relative_to(workload) and response.is_file(),
+            "response file must be inside the workload")
+    probe = manifest.get("probe")
+    require(isinstance(probe, dict), "missing probe")
+    argv = probe.get("argv")
+    require(isinstance(argv, list) and argv
+            and all(isinstance(arg, str) for arg in argv), "invalid probe argv")
+    require(type(probe.get("expected_returncode")) is int, "invalid probe status")
+    for field in ("expected_stdout", "expected_stderr"):
+        require(isinstance(probe.get(field), str), f"invalid {field}")
+    return manifest, response
+
+
+def driver_timer(arguments):
+    """Run inside strace so tracer startup/teardown is outside the sample."""
+    timing_file, driver, *argv = arguments
+    started = time.monotonic_ns()
+    process = subprocess.Popen([driver, *argv], stdin=subprocess.DEVNULL)
+    status = process.wait()
+    elapsed = time.monotonic_ns() - started
+    Path(timing_file).write_text(json.dumps([status, elapsed]), encoding="ascii")
+    return 0 if status == 0 else 1
+
+
+def strings(text):
+    # -xx makes every byte of every quoted string hexadecimal. In particular,
+    # this preserves literal /./ and /../ components of executed pathnames.
+    return [os.fsdecode(bytes.fromhex(value.replace("\\x", "")))
+            for value in HEX_STRING.findall(text)]
+
+
+def trace_events(trace):
+    """Reassemble interleaved unfinished/resumed syscalls, retaining call order."""
+    pending = {}
+    events = []
+    for index, line in enumerate(trace.read_text("utf-8").splitlines()):
+        match = re.match(r"\s*(\d+)\s+(.*)", line)
+        if not match:
+            continue
+        pid, call = int(match[1]), match[2]
+        if call.endswith(" <unfinished ...>"):
+            pending[pid] = (index, call[:-len(" <unfinished ...>")])
+            continue
+        resumed = re.match(r"<\.\.\. (\w+) resumed>(.*)", call)
+        if resumed:
+            require(pid in pending, "incomplete execution trace")
+            index, beginning = pending.pop(pid)
+            call = beginning + resumed[2]
+        parsed = re.match(r"(\w+)\((.*)\)\s+=\s+(-?\d+)(?:\s|$|<)", call)
+        if parsed:
+            events.append((index, pid, parsed[1], parsed[2], int(parsed[3])))
+    return sorted(events)
+
+
+def observed_linker(trace, output):
+    """Associate output creation/publication with its successful execve.
+
+    Forked workers and threads inherit their parent's executed image. Auxiliary
+    linker-shaped version probes do not create the output and cannot win this
+    attribution merely by being the first or last exec in the trace.
+    """
+    images = {}
+    producers = set()
+    for _, pid, syscall, arguments, result in trace_events(trace):
+        if result < 0:
+            continue
+        values = strings(arguments)
+        if syscall in ("execve", "execveat") and result == 0:
+            require(values, "exec event has no pathname")
+            images[pid] = values[0]
+        elif syscall in ("clone", "clone3", "fork", "vfork") and result > 0:
+            if pid in images:
+                images[result] = images[pid]
+        elif syscall in ("open", "openat", "creat"):
+            if (values and values[0] == str(output)
+                    and (syscall == "creat"
+                         or (re.search(r"\bO_(CREAT|TRUNC)\b", arguments)
+                             and re.search(r"\bO_(WRONLY|RDWR)\b", arguments)))):
+                require(pid in images, "output creator has no observed exec")
+                producers.add(images[pid])
+        elif syscall in ("rename", "renameat", "renameat2"):
+            if len(values) >= 2 and values[1] == str(output):
+                require(pid in images, "output publisher has no observed exec")
+                producers.add(images[pid])
+    require(len(producers) == 1,
+            f"cannot uniquely attribute output to an executed linker: {producers}")
+    path = producers.pop()
+    require(os.path.isabs(path), "executed linker pathname is not absolute")
+    return path
+
+
+def check_identity(path, linker, known, *, workload, environment):
+    # Probe on *every* link: neither a stable pathname nor an earlier version
+    # result establishes the family of a subsequent invocation.
+    result = run([path, "--version"], cwd=workload,
+                 environment=environment, timeout=30)
+    require(result.returncode == 0, f"{path} --version failed")
+    version = next((line for line in result.stdout.decode("utf-8", "replace").splitlines()
+                    if line.strip()), "")
+    require(version, f"{path} has no version line")
+    lower = version.lower()
+    family = next((family for marker, family in
+                   (("mold", "mold"), ("gnu gold", "gold"),
+                    ("lld", "lld"), ("gnu ld", "bfd")) if marker in lower), None)
+    require(family == linker, f"requested {linker}, executed {path}: {version}")
+    if linker in known:
+        require(known[linker]["invoked_path"] == path,
+                f"executed pathname changed for {linker}")
+    else:
+        known[linker] = {"invoked_path": path, "version": version}
+
+
+def probe_output(output, manifest, *, workload, environment):
+    require(stat.S_ISREG(output.lstat().st_mode), "output is not a regular file")
+    probe = manifest["probe"]
+    command = [str(output) if arg == "{output}" else arg for arg in probe["argv"]]
+    result = run(command, cwd=workload, environment=environment, timeout=30)
+    require(result.returncode == probe["expected_returncode"]
+            and result.stdout == probe["expected_stdout"].encode("utf-8")
+            and result.stderr == probe["expected_stderr"].encode("utf-8"),
+            "output failed the manifest probe")
+
+
+def execute_link(manifest, response, linker, scratch, known, *, workload, environment):
+    output = scratch / f"output-{linker}"
+    output.unlink(missing_ok=True)
+    timing = scratch / "timing.json"
+    timing.unlink(missing_ok=True)
+    trace = scratch / "trace.log"
+    command = [manifest["driver"], f"-fuse-ld={linker}", *THREAD_ARGS[linker],
+               f"@{response}", "-o", str(output)]
+    traced = ["strace", "-f", "-qq", "-s", "0", "-xx", "-o", str(trace),
+              "-e", "trace=execve,execveat,clone,clone3,fork,vfork,open,openat,creat,rename,renameat,renameat2",
+              "--", sys.executable, os.path.abspath(__file__), "--driver-timer",
+              str(timing), *command]
+    result = run(traced, cwd=workload, environment=environment)
+    require(result.returncode == 0,
+            f"{linker} link failed: {result.stderr.decode('utf-8', 'replace')}")
+    status, elapsed = json.loads(timing.read_text("ascii"))
+    require(status == 0 and type(elapsed) is int and elapsed > 0,
+            "driver failed or supplied an invalid duration")
+    probe_output(output, manifest, workload=workload, environment=environment)
+    path = observed_linker(trace, output)
+    check_identity(path, linker, known, workload=workload, environment=environment)
+    return elapsed
+
+
+def benchmark(workload, report_path):
+    workload = workload.resolve()
+    require(not report_path.parent.resolve().is_relative_to(workload),
+            "report must be outside the workload")
+    manifest, response = load_workload(workload)
+    known = {}
+    samples = {linker: [] for linker in LINKERS}
+    # Explicitly ignore an inherited TMPDIR that may point into the workload.
+    with tempfile.TemporaryDirectory(prefix="linkbench-", dir="/tmp") as temp:
+        scratch = Path(temp)
+        require(not scratch.is_relative_to(workload), "scratch is inside workload")
+        environment = os.environ.copy()
+        environment.update(TMPDIR=temp, TMP=temp, TEMP=temp, LC_ALL="C", LANG="C",
+                           PYTHONDONTWRITEBYTECODE="1")
+        for round_index, order in enumerate([manifest["warmup_order"],
+                                             *manifest["timed_rounds"]]):
+            for linker in order:
+                elapsed = execute_link(manifest, response, linker, scratch, known,
+                                       workload=workload, environment=environment)
+                if round_index:
+                    samples[linker].append(elapsed)
+    medians = {linker: sorted(samples[linker])[2] for linker in LINKERS}
+    report = {
+        "schema_version": 1,
+        "workload_id": manifest["workload_id"],
+        "results": [dict(linker=linker, **known[linker],
+                         effective_threads=1 if linker == "bfd" else 2,
+                         samples_ns=samples[linker], median_ns=medians[linker])
+                    for linker in LINKERS],
+        "ranking": sorted(LINKERS, key=medians.__getitem__),
+    }
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_report = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8",
+                                         dir=report_path.parent, delete=False) as stream:
+            temporary_report = Path(stream.name)
+            json.dump(report, stream, indent=2)
+            stream.write("\n")
+        os.replace(temporary_report, report_path)
+    finally:
+        if temporary_report is not None:
+            temporary_report.unlink(missing_ok=True)
+
+
+def main():
+    if len(sys.argv) >= 2 and sys.argv[1] == "--driver-timer":
+        return driver_timer(sys.argv[2:])
+    if len(sys.argv) != 3:
+        print("usage: linkbench <workload-directory> <report-json>", file=sys.stderr)
+        return 2
+    report = Path(os.path.abspath(sys.argv[2]))
+    try:
+        # Unlink the name itself, including dangling symlinks, before any links.
+        report.unlink(missing_ok=True)
+        benchmark(Path(sys.argv[1]), report)
+    except (HarnessError, OSError, KeyError, TypeError, ValueError) as exc:
+        print(f"linkbench: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

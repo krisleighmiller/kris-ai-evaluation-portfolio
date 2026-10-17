@@ -1,0 +1,370 @@
+# Clip Provenance Report
+
+**Goal:** Determine, for each of ~200 clips, (a) which of 45 original "master"
+videos it came from, (b) where in that master it begins, and (c) how confident
+we are — including identifying clips that do not come from the library at all.
+
+All retained public work for this trial is contained in this trial directory.
+
+---
+
+## 1. Method
+
+### 1.1 Data observed
+- **45 masters** — all 640×480, h.264/aac, exactly 40.0 s each, 24 fps, all with audio.
+- **200 clips** — 6.1–13.9 s each, a wide variety of resolutions (640×480 down to
+  260×208 and everything between), 157 with audio / 43 without. The diverse
+  dimensions confirm the clips were cropped/resized/re-encoded; the clip set is
+  clearly a re-uploaded, edited derivative of the masters (plus some foreign
+  videos).
+
+### 1.2 Per-frame perceptual fingerprint
+Each video is decoded and sampled at **2 fps**. Each sampled frame is reduced to
+a small, *transform-invariant* descriptor of 211 floats:
+
+| feature | purpose | robustness |
+|---|---|---|
+| dHash (horizontal) 64 bits | luminance gradient structure | resize, brightness, compression |
+| dHash (vertical) 64 bits | vertical structure | resize, brightness, compression |
+| pHash (DCT) 64 bits | low-frequency spatial layout | blur, compression |
+| hue histogram (8 hue × 2 saturation bins) | color character, *brightness-invariant* | brightness offset |
+| luma mean/median/std | light level (low weight) | — |
+
+Structure features dominate the distance so that cropping, resizing,
+compression, watermarks, and color/brightness changes leave the fingerprint
+largely intact.
+
+### 1.3 Matching a clip to a master
+A clip's ordered sequence of frame descriptors is slid along every master's
+ordered descriptor sequence (2 fps = every 0.5 s), summing Hamming/feature
+distances along the alignment diagonal. To tolerate **speed changes**, the clip
+sequence is also time-rescaled across ratios 0.80 → 1.20 (2.5% steps). The
+offset of the best alignment gives the clip's **start time** in the master.
+
+Two scalars are extracted for confidence (both from the best master):
+
+- **score** — mean frame distance of the alignment (lower = better).
+- **uniqueness** — best-offset score ÷ score at the best *non-overlapping* offset.
+  A genuine clip fits in exactly one place, so uniqueness is low (<~0.6); a
+  foreign clip fits "equally well everywhere", so uniqueness is ~1.
+
+### 1.4 Audio corroboration (independent signal)
+Audio is far more robust than video to cropping/resizing/color. For clips that
+still carry their original audio, the audio track is decoded to 8 kHz mono and
+turned into a coarse log-spectrum spectrogram (40 bands @ 10 fps), which is
+cross-correlated against every master's spectrogram. The best correlation and
+its offset provide a **second, independent** source+offset estimate at 0.1 s
+resolution. This tolerates re-compression and speed changes up to ~30%.
+
+### 1.5 Classification
+Two independent channels (visual structure vs. audio spectrum) each point to a
+master + offset. Final labels:
+
+- **confident** — decisive audio (corr>0.70), *or* audio+video agree (corr>0.55),
+  *or* very strong unique video alignment (uniqueness≤0.50).
+- **likely** — cross-channel agreement with a weak video, or moderate video
+  uniqueness (≤0.80).
+- **uncertain** — ambiguous video (uniqueness 0.80–0.93), no decisive audio.
+- **not identified** — no reliable alignment (uniqueness>0.93), no audio; most
+  likely external content.
+
+---
+
+## 2. How the results were validated
+
+Validation was **self-contained** (no external ground truth exists), using four
+independent lines of evidence:
+
+**(1) Exact-cut recovery.** Segments were cut from known masters at known
+offsets and re-matched. The correct master *and* offset were recovered in
+**9/9** cases (score≈0).
+
+**(2) Transform robustness.** The same cut segments were re-encoded with each
+adversarial transform named in the brief — crop, resize, JPEG-style
+compression, brightness/saturation shift, watermark overlay, and ±10% speed
+change — then re-matched. The correct **master and offset were recovered in
+every case**, with scores degrading only mildly (table below).
+
+**(3) Threshold calibration on labeled synthetic data.** 80 clips cut from
+masters (with random mild→severe transforms) and 42 foreign clips (held-out
+master video, synthetic noise, shuffled frames) were matched against the
+search library. Result: genuine clips had `uniqueness` mostly <0.6 (median
+0.60, only extreme hue-shift/40%-crop cases rising to ~0.95), while foreign
+clips had `uniqueness` mostly >0.85 (min 0.76, median 0.97). Master-ID accuracy
+on genuine clips was **76/80 (95%)**, and **no foreign clip was ever classified
+"confident."**
+
+**(4) Cross-channel agreement on the real data.** For the real clips, the two
+*independent* signals (video structure vs. audio spectrum) were compared.
+At audio correlation >0.6 the two channels **agreed on the source in every
+case (no disagreements)**. Only **4 clips** showed any conflict, all at moderate
+correlation 0.52–0.58 and all landing in the "uncertain"/"not identified"
+buckets. Two independent channels using different physics agreeing is strong
+evidence the matches are real, not coincidental.
+
+**Transform-robustness results** (synthetic cut, re-matched):
+
+| transform | true master | recovered offset | recovered |
+|---|---|---|---|
+| crop + resize | 0 @ 8.0s | 8.0s | ✓ |
+| re-compression | 1 @ 6.0s | 6.0s | ✓ |
+| brightness +0.15 / sat 1.4 | 1 @ 6.0s | 6.0s | ✓ |
+| speed ×1.1 | 2 @ 6.0s | 6.0s | ✓ |
+| speed ×0.9 | 2 @ 6.0s | 6.0s | ✓ |
+| watermark overlay | 3 @ 6.0s | 6.0s | ✓ |
+
+**Known limitations.** (a) Extremely aggressive transforms — large hue
+rotation, >30% crop, very strong brightness shifts — push a genuine clip's
+video `uniqueness` into the foreign range and can therefore only be rescued by
+audio. (b) Audioless clips that were *also* heavily transformed cannot be
+distinguished from foreign clips. (c) The begin time is reported to ±0.25 s
+(video) or ±0.1 s (audio-corroborated). Where masters contain visually
+repeated scenes, the *offset* can be ambiguous even though the master ID is
+secure; these were kept in "uncertain" when it affected the result.
+
+---
+
+## 3. Results
+
+| classification | count |
+|---|---|
+| confident | 125 |
+| likely | 26 |
+| uncertain | 27 |
+| not identified | 22 |
+
+Identified clips (confident + likely = 151) are attributed to **all 45
+masters**, with 1–4 clips each — consistent with clips drawn from across the
+whole library rather than a matching artifact.
+
+Begin times range 0.0–32.8 s. About **40** identified clips show a detected
+speed change (|ratio−1|>0.05), confirming the brief's mention of sped-up /
+slowed-down copies.
+
+Four clips show *conflicting* audio/video evidence (moderate audio pointing at
+a different master than the ambiguous video) and are left as "uncertain":
+`clip_059`, `clip_175`, `clip_190`, plus `clip_099` (not identified).
+
+The complete per-clip table follows.
+
+### 3.1 Confident (125)
+
+_begin = start time in the master; speed = playback ratio (1.0 = unaltered); uniqueness/score = video match quality (lower = better); audio-corr = spectral cross-correlation (higher = better, '—' = no audio)._
+
+| clip | source | begin | speed | uniqueness | score | audio-corr |
+|------|--------|-------|-------|-----------|-------|-----------|
+| clip_000 | master_28 | 14.2s | 0.95 | 0.165 | 0.058 | 0.83 |
+| clip_001 | master_04 | 28.0s | 0.97 | 0.045 | 0.011 | 0.76 |
+| clip_005 | master_26 | 5.0s | 0.97 | 0.018 | 0.002 | 0.96 |
+| clip_006 | master_07 | 11.1s | 1.00 | 0.106 | 0.034 | 0.90 |
+| clip_007 | master_11 | 9.9s | 0.97 | 0.110 | 0.041 | 0.80 |
+| clip_012 | master_10 | 24.8s | 1.00 | 0.658 | 0.261 | 0.71 |
+| clip_014 | master_20 | 22.8s | 0.93 | 0.440 | 0.162 | — |
+| clip_015 | master_18 | 2.8s | 1.02 | 0.320 | 0.202 | — |
+| clip_016 | master_11 | 27.8s | 0.97 | 0.220 | 0.086 | 0.88 |
+| clip_017 | master_11 | 18.8s | 1.05 | 0.520 | 0.260 | 0.77 |
+| clip_018 | master_14 | 22.9s | 0.97 | 0.436 | 0.109 | 0.67 |
+| clip_020 | master_17 | 6.6s | 0.97 | 0.187 | 0.049 | 0.85 |
+| clip_021 | master_00 | 1.0s | 0.97 | 0.730 | 0.484 | 0.77 |
+| clip_023 | master_29 | 15.0s | 1.00 | 0.269 | 0.069 | 0.28 |
+| clip_025 | master_42 | 4.6s | 0.95 | 0.714 | 0.235 | 0.86 |
+| clip_027 | master_31 | 6.2s | 0.97 | 0.225 | 0.103 | 0.32 |
+| clip_028 | master_21 | 3.2s | 0.95 | 0.438 | 0.179 | 0.30 |
+| clip_029 | master_15 | 0.0s | 0.97 | 0.095 | 0.024 | — |
+| clip_030 | master_04 | 18.4s | 0.90 | 0.768 | 0.336 | 0.71 |
+| clip_031 | master_20 | 8.2s | 0.97 | 0.764 | 0.408 | 0.95 |
+| clip_033 | master_41 | 6.3s | 0.93 | 0.722 | 0.313 | 0.90 |
+| clip_034 | master_43 | 22.0s | 0.97 | 0.033 | 0.006 | 0.56 |
+| clip_035 | master_34 | 6.9s | 1.20 | 0.526 | 0.184 | 0.74 |
+| clip_037 | master_12 | 23.4s | 1.00 | 0.221 | 0.069 | 0.86 |
+| clip_038 | master_40 | 17.5s | 1.00 | 0.483 | 0.259 | 0.30 |
+| clip_039 | master_38 | 4.6s | 0.97 | 0.586 | 0.236 | 0.81 |
+| clip_042 | master_32 | 14.8s | 0.93 | 0.667 | 0.213 | 0.84 |
+| clip_043 | master_10 | 14.1s | 0.95 | 1.000 | 0.064 | 0.93 |
+| clip_044 | master_22 | 19.2s | 1.05 | 0.390 | 0.128 | 0.81 |
+| clip_045 | master_34 | 4.3s | 1.00 | 0.443 | 0.158 | 0.79 |
+| clip_047 | master_02 | 15.9s | 1.00 | 0.065 | 0.022 | 0.57 |
+| clip_049 | master_41 | 0.1s | 1.00 | 0.658 | 0.205 | 0.88 |
+| clip_050 | master_12 | 5.5s | 1.00 | 0.230 | 0.073 | 0.32 |
+| clip_052 | master_08 | 24.3s | 1.05 | 0.600 | 0.178 | 0.56 |
+| clip_053 | master_01 | 6.2s | 0.95 | 0.925 | 0.271 | 0.95 |
+| clip_057 | master_40 | 5.4s | 0.97 | 0.655 | 0.305 | 0.77 |
+| clip_058 | master_04 | 11.1s | 0.97 | 0.156 | 0.045 | 0.77 |
+| clip_060 | master_02 | 20.7s | 0.97 | 0.182 | 0.038 | 0.60 |
+| clip_062 | master_33 | 12.7s | 1.05 | 0.144 | 0.066 | 0.90 |
+| clip_063 | master_26 | 5.5s | 0.97 | 0.354 | 0.045 | 0.31 |
+| clip_064 | master_09 | 3.8s | 1.00 | 0.225 | 0.084 | — |
+| clip_066 | master_26 | 5.1s | 0.97 | 0.290 | 0.037 | 0.89 |
+| clip_067 | master_12 | 25.2s | 1.00 | 0.625 | 0.312 | 0.82 |
+| clip_068 | master_21 | 16.2s | 1.00 | 0.357 | 0.144 | — |
+| clip_069 | master_24 | 27.7s | 1.12 | 0.764 | 0.290 | 0.62 |
+| clip_071 | master_42 | 18.0s | 1.00 | 0.192 | 0.058 | 0.32 |
+| clip_073 | master_26 | 7.0s | 0.97 | 0.884 | 0.187 | 0.84 |
+| clip_074 | master_32 | 24.8s | 1.00 | 0.541 | 0.178 | 0.73 |
+| clip_075 | master_05 | 22.6s | 1.07 | 0.634 | 0.299 | 0.95 |
+| clip_076 | master_22 | 10.3s | 0.97 | 0.097 | 0.027 | 0.78 |
+| clip_077 | master_08 | 31.2s | 0.97 | 0.321 | 0.108 | 0.34 |
+| clip_078 | master_35 | 16.1s | 0.97 | 0.160 | 0.031 | 0.94 |
+| clip_079 | master_25 | 30.5s | 1.18 | 0.913 | 0.472 | 0.90 |
+| clip_083 | master_38 | 28.5s | 0.97 | 0.298 | 0.106 | 0.34 |
+| clip_085 | master_37 | 4.4s | 1.05 | 0.839 | 0.134 | 0.81 |
+| clip_087 | master_21 | 27.0s | 0.97 | 0.432 | 0.171 | — |
+| clip_088 | master_30 | 11.4s | 1.00 | 0.166 | 0.042 | 0.75 |
+| clip_090 | master_07 | 0.0s | 1.00 | 0.099 | 0.037 | 0.79 |
+| clip_092 | master_34 | 12.0s | 1.00 | 0.116 | 0.042 | 0.28 |
+| clip_094 | master_18 | 18.0s | 0.97 | 0.289 | 0.152 | — |
+| clip_096 | master_29 | 23.0s | 1.00 | 0.073 | 0.022 | — |
+| clip_098 | master_36 | 16.8s | 1.02 | 0.440 | 0.150 | 0.92 |
+| clip_100 | master_10 | 6.4s | 1.00 | 0.268 | 0.115 | 0.72 |
+| clip_101 | master_17 | 0.1s | 1.05 | 0.618 | 0.206 | 0.79 |
+| clip_102 | master_24 | 0.0s | 1.02 | 0.640 | 0.196 | 0.82 |
+| clip_103 | master_22 | 2.0s | 0.97 | 0.125 | 0.032 | 0.35 |
+| clip_104 | master_44 | 0.0s | 1.02 | 0.085 | 0.025 | 0.21 |
+| clip_105 | master_18 | 9.2s | 1.05 | 0.374 | 0.224 | 0.36 |
+| clip_106 | master_11 | 2.0s | 0.97 | 0.359 | 0.164 | 0.79 |
+| clip_111 | master_19 | 32.8s | 0.90 | 0.470 | 0.150 | 0.41 |
+| clip_112 | master_00 | 19.3s | 0.95 | 0.752 | 0.456 | 0.82 |
+| clip_115 | master_16 | 4.5s | 1.00 | 0.259 | 0.146 | 0.71 |
+| clip_116 | master_23 | 25.8s | 0.97 | 0.436 | 0.079 | 0.85 |
+| clip_117 | master_07 | 24.2s | 0.97 | 0.710 | 0.227 | 0.75 |
+| clip_118 | master_41 | 22.7s | 1.10 | 0.807 | 0.243 | 0.85 |
+| clip_119 | master_00 | 26.2s | 1.02 | 0.167 | 0.052 | 0.24 |
+| clip_120 | master_16 | 13.5s | 0.93 | 0.498 | 0.222 | — |
+| clip_121 | master_20 | 1.4s | 1.00 | 0.109 | 0.040 | 0.83 |
+| clip_122 | master_13 | 27.5s | 0.97 | 0.167 | 0.030 | 0.34 |
+| clip_126 | master_03 | 11.2s | 0.95 | 0.130 | 0.054 | 0.26 |
+| clip_128 | master_23 | 26.0s | 0.97 | 0.139 | 0.024 | — |
+| clip_129 | master_14 | 20.0s | 0.95 | 0.044 | 0.015 | 0.51 |
+| clip_130 | master_10 | 0.1s | 0.97 | 0.782 | 0.322 | 0.73 |
+| clip_131 | master_09 | 8.8s | 1.02 | 0.216 | 0.093 | — |
+| clip_132 | master_35 | 3.0s | 0.97 | 0.336 | 0.064 | — |
+| clip_134 | master_41 | 16.1s | 1.00 | 0.101 | 0.026 | 0.89 |
+| clip_136 | master_25 | 22.2s | 0.97 | 0.439 | 0.250 | 0.30 |
+| clip_137 | master_15 | 8.1s | 1.00 | 0.682 | 0.420 | 0.91 |
+| clip_138 | master_35 | 32.2s | 0.97 | 0.418 | 0.148 | — |
+| clip_140 | master_27 | 19.9s | 0.97 | 0.338 | 0.076 | 0.61 |
+| clip_143 | master_24 | 20.0s | 1.00 | 0.338 | 0.061 | 0.22 |
+| clip_144 | master_03 | 10.8s | 1.00 | 0.133 | 0.061 | 0.74 |
+| clip_145 | master_25 | 1.0s | 1.00 | 0.480 | 0.319 | 0.60 |
+| clip_146 | master_14 | 30.2s | 0.97 | 0.163 | 0.047 | 0.35 |
+| clip_148 | master_09 | 15.8s | 0.97 | 0.411 | 0.119 | — |
+| clip_150 | master_29 | 0.0s | 1.00 | 0.311 | 0.103 | 0.25 |
+| clip_151 | master_14 | 1.1s | 1.00 | 0.550 | 0.190 | 0.90 |
+| clip_152 | master_30 | 3.5s | 0.97 | 0.160 | 0.033 | — |
+| clip_153 | master_38 | 18.9s | 1.00 | 0.283 | 0.110 | 0.78 |
+| clip_154 | master_00 | 12.8s | 1.00 | 0.223 | 0.069 | 0.26 |
+| clip_156 | master_31 | 16.5s | 0.97 | 0.688 | 0.253 | 0.79 |
+| clip_158 | master_17 | 27.7s | 0.97 | 0.670 | 0.222 | 0.86 |
+| clip_159 | master_44 | 0.2s | 1.02 | 0.326 | 0.103 | 0.89 |
+| clip_160 | master_04 | 3.9s | 0.97 | 0.139 | 0.048 | 0.58 |
+| clip_161 | master_06 | 27.0s | 1.10 | 0.064 | 0.014 | — |
+| clip_163 | master_37 | 26.5s | 0.97 | 0.144 | 0.036 | 0.88 |
+| clip_164 | master_06 | 20.8s | 1.02 | 0.135 | 0.044 | 0.25 |
+| clip_166 | master_37 | 16.2s | 1.00 | 0.735 | 0.154 | 0.99 |
+| clip_168 | master_09 | 27.3s | 1.05 | 0.450 | 0.170 | 0.81 |
+| clip_170 | master_05 | 31.5s | 0.97 | 0.411 | 0.201 | — |
+| clip_172 | master_19 | 25.2s | 0.93 | 0.492 | 0.161 | — |
+| clip_173 | master_33 | 25.4s | 1.00 | 0.101 | 0.047 | 0.87 |
+| clip_176 | master_18 | 25.4s | 1.00 | 0.152 | 0.097 | 0.70 |
+| clip_177 | master_29 | 6.0s | 0.97 | 0.494 | 0.176 | — |
+| clip_178 | master_31 | 25.1s | 0.97 | 0.774 | 0.304 | 0.80 |
+| clip_180 | master_08 | 4.4s | 0.90 | 0.700 | 0.232 | 0.62 |
+| clip_183 | master_05 | 16.3s | 1.00 | 0.591 | 0.354 | 0.77 |
+| clip_184 | master_17 | 15.2s | 1.00 | 0.159 | 0.054 | 0.23 |
+| clip_186 | master_43 | 10.5s | 0.97 | 0.188 | 0.032 | 0.85 |
+| clip_187 | master_43 | 12.0s | 0.97 | 0.173 | 0.029 | — |
+| clip_191 | master_06 | 10.5s | 1.00 | 0.057 | 0.015 | 0.26 |
+| clip_192 | master_08 | 11.0s | 0.97 | 0.345 | 0.113 | 0.53 |
+| clip_196 | master_12 | 16.1s | 0.97 | 0.627 | 0.198 | 0.82 |
+| clip_197 | master_20 | 9.1s | 1.15 | 0.840 | 0.459 | 0.90 |
+| clip_198 | master_21 | 9.3s | 0.97 | 0.731 | 0.293 | 0.68 |
+
+### 3.2 Likely (26)
+
+| clip | source | begin | speed | uniqueness | score | audio-corr |
+|------|--------|-------|-------|-----------|-------|-----------|
+| clip_008 | master_06 | 3.2s | 0.95 | 0.627 | 0.450 | 0.25 |
+| clip_011 | master_31 | 0.2s | 0.97 | 0.664 | 0.292 | — |
+| clip_024 | master_36 | 24.0s | 1.00 | 0.738 | 0.518 | 0.27 |
+| clip_032 | master_44 | 0.2s | 1.07 | 0.791 | 0.241 | — |
+| clip_040 | master_39 | 1.2s | 1.02 | 0.647 | 0.264 | 0.29 |
+| clip_051 | master_34 | 18.0s | 0.85 | 0.524 | 0.169 | 0.36 |
+| clip_055 | master_30 | 22.0s | 1.00 | 0.614 | 0.258 | 0.24 |
+| clip_061 | master_27 | 2.0s | 1.00 | 0.912 | 0.612 | 0.59 |
+| clip_065 | master_16 | 25.2s | 0.95 | 0.778 | 0.407 | 0.25 |
+| clip_070 | master_39 | 9.2s | 1.00 | 0.593 | 0.277 | — |
+| clip_080 | master_23 | 26.2s | 0.97 | 0.794 | 0.244 | — |
+| clip_082 | master_15 | 29.3s | 1.05 | 0.969 | 0.257 | 0.70 |
+| clip_084 | master_03 | 0.2s | 1.10 | 0.670 | 0.210 | 0.45 |
+| clip_108 | master_32 | 27.2s | 1.00 | 0.903 | 0.511 | 0.63 |
+| clip_114 | master_42 | 27.2s | 1.00 | 0.543 | 0.176 | — |
+| clip_123 | master_03 | 14.5s | 0.97 | 0.780 | 0.233 | — |
+| clip_124 | master_33 | 23.5s | 1.00 | 0.551 | 0.290 | — |
+| clip_127 | master_40 | 11.5s | 1.00 | 0.821 | 0.417 | 0.69 |
+| clip_139 | master_19 | 0.0s | 0.97 | 0.512 | 0.163 | 0.54 |
+| clip_155 | master_36 | 7.0s | 1.05 | 0.685 | 0.231 | — |
+| clip_171 | master_28 | 7.0s | 1.00 | 0.628 | 0.174 | 0.25 |
+| clip_174 | master_39 | 18.2s | 0.97 | 0.670 | 0.227 | 0.36 |
+| clip_179 | master_13 | 4.8s | 1.07 | 0.771 | 0.216 | — |
+| clip_185 | master_32 | 5.2s | 0.97 | 0.769 | 0.241 | 0.32 |
+| clip_188 | master_33 | 1.2s | 0.95 | 0.745 | 0.465 | — |
+| clip_194 | master_02 | 29.2s | 1.00 | 0.675 | 0.186 | 0.27 |
+
+### 3.3 Uncertain (27)
+
+| clip | source | begin | speed | uniqueness | score | audio-corr |
+|------|--------|-------|-------|-----------|-------|-----------|
+| clip_003 | master_00 | 25.8s | 1.15 | 0.886 | 0.319 | — |
+| clip_004 | master_16 | 20.5s | 1.12 | 0.841 | 0.424 | 0.31 |
+| clip_009 | master_01 | 13.0s | 0.97 | 0.888 | 0.594 | — |
+| clip_010 | master_25 | 17.2s | 0.85 | 0.930 | 0.619 | 0.34 |
+| clip_013 | master_10 | 19.2s | 1.12 | 0.857 | 0.359 | 0.35 |
+| clip_041 | master_41 | 9.2s | 1.20 | 0.917 | 0.378 | — |
+| clip_059 | master_33 | 2.0s | 0.82 | 0.900 | 0.414 | 0.52 |
+| clip_072 | master_37 | 5.2s | 1.15 | 0.928 | 0.381 | 0.25 |
+| clip_086 | master_35 | 23.2s | 1.20 | 0.827 | 0.453 | 0.33 |
+| clip_089 | master_40 | 28.0s | 1.10 | 0.877 | 0.529 | 0.34 |
+| clip_091 | master_36 | 19.0s | 0.95 | 0.845 | 0.300 | 0.29 |
+| clip_093 | master_28 | 22.5s | 1.00 | 0.824 | 0.238 | — |
+| clip_095 | master_01 | 26.8s | 1.00 | 0.851 | 0.262 | — |
+| clip_110 | master_16 | 20.8s | 1.20 | 0.923 | 0.480 | 0.26 |
+| clip_113 | master_01 | 0.0s | 1.00 | 0.853 | 0.228 | 0.32 |
+| clip_125 | master_07 | 24.5s | 0.95 | 0.927 | 0.378 | 0.15 |
+| clip_133 | master_16 | 14.8s | 1.20 | 0.872 | 0.441 | — |
+| clip_141 | master_13 | 27.5s | 0.97 | 0.874 | 0.234 | — |
+| clip_147 | master_27 | 10.0s | 1.00 | 0.804 | 0.482 | 0.23 |
+| clip_162 | master_36 | 18.5s | 0.80 | 0.849 | 0.283 | 0.30 |
+| clip_165 | master_36 | 1.0s | 1.00 | 0.880 | 0.606 | 0.25 |
+| clip_175 | master_34 | 29.0s | 0.85 | 0.861 | 0.335 | 0.56 |
+| clip_181 | master_36 | 20.2s | 1.18 | 0.898 | 0.297 | 0.36 |
+| clip_182 | master_44 | 2.8s | 1.07 | 0.802 | 0.278 | — |
+| clip_190 | master_16 | 28.5s | 1.12 | 0.901 | 0.527 | 0.58 |
+| clip_195 | master_12 | 18.0s | 1.20 | 0.894 | 0.292 | 0.34 |
+| clip_199 | master_37 | 25.0s | 1.12 | 0.902 | 0.317 | 0.43 |
+
+### 3.4 Not identified (likely external) (22)
+
+| clip | source | begin | speed | uniqueness | score | audio-corr |
+|------|--------|-------|-------|-----------|-------|-----------|
+| clip_002 | master_38 | — | 1.15 | 0.990 | 0.517 | 0.37 |
+| clip_019 | master_20 | — | 1.10 | 0.987 | 0.445 | 0.30 |
+| clip_022 | master_32 | — | 0.82 | 0.962 | 0.514 | — |
+| clip_026 | master_26 | — | 1.12 | 0.979 | 0.567 | 0.23 |
+| clip_036 | master_16 | — | 1.12 | 0.949 | 0.546 | 0.44 |
+| clip_046 | master_22 | — | 1.10 | 0.979 | 0.381 | 0.31 |
+| clip_048 | master_07 | — | 1.10 | 0.984 | 0.481 | 0.30 |
+| clip_054 | master_36 | — | 1.05 | 0.936 | 0.325 | 0.32 |
+| clip_056 | master_04 | — | 1.12 | 0.984 | 0.351 | — |
+| clip_081 | master_25 | — | 1.18 | 0.981 | 0.659 | 0.30 |
+| clip_097 | master_17 | — | 1.02 | 0.942 | 0.334 | 0.31 |
+| clip_099 | master_33 | — | 1.12 | 0.988 | 0.505 | 0.53 |
+| clip_107 | master_07 | — | 1.20 | 0.992 | 0.489 | 0.20 |
+| clip_109 | master_44 | — | 1.15 | 0.949 | 0.506 | 0.27 |
+| clip_135 | master_04 | — | 1.05 | 0.981 | 0.378 | — |
+| clip_142 | master_03 | — | 1.10 | 0.973 | 0.439 | 0.27 |
+| clip_149 | master_19 | — | 1.15 | 0.956 | 0.289 | 0.39 |
+| clip_157 | master_37 | — | 0.95 | 0.960 | 0.320 | — |
+| clip_167 | master_37 | — | 0.90 | 0.945 | 0.295 | — |
+| clip_169 | master_33 | — | 0.95 | 0.933 | 0.454 | 0.44 |
+| clip_189 | master_07 | — | 0.85 | 0.976 | 0.443 | 0.20 |
+| clip_193 | master_07 | — | 0.88 | 0.943 | 0.410 | 0.14 |

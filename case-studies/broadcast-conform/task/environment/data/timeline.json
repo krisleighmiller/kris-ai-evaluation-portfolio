@@ -1,0 +1,14 @@
+{
+  "comment": "Cut list for the 60-second master. Segments are butt-joined in order; source_in is inclusive, source_out exclusive, both in seconds of the source's displayed timeline: the presentation timeline a player shows, with display rotation applied and the container's own timing (edit lists, start offsets) honoured rather than discarded. Master runs at 30/1 fps; every boundary lands on the master frame grid.",
+  "master_frame_rate": "30/1",
+  "master_duration_sec": 60.0,
+  "segments": [
+    { "index": 0, "source": "A.mp4", "source_in_sec": 0.0,  "source_out_sec": 8.0,  "master_start_sec": 0.0 },
+    { "index": 1, "source": "C.mov", "source_in_sec": 4.0,  "source_out_sec": 12.0, "master_start_sec": 8.0 },
+    { "index": 2, "source": "B.mp4", "source_in_sec": 3.0,  "source_out_sec": 11.0, "master_start_sec": 16.0 },
+    { "index": 3, "source": "E.mov", "source_in_sec": 10.0, "source_out_sec": 18.0, "master_start_sec": 24.0 },
+    { "index": 4, "source": "D.mp4", "source_in_sec": 5.0,  "source_out_sec": 13.0, "master_start_sec": 32.0 },
+    { "index": 5, "source": "G.mp4", "source_in_sec": 20.0, "source_out_sec": 28.0, "master_start_sec": 40.0 },
+    { "index": 6, "source": "F.mp4", "source_in_sec": 14.0, "source_out_sec": 26.0, "master_start_sec": 48.0 }
+  ]
+}

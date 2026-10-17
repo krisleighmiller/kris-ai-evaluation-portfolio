@@ -1,0 +1,55 @@
+{
+  "results": [
+    {
+      "checks": {
+        "behavior_in_task_description": {
+          "explanation": "instruction.md explicitly specifies the complete protocol: the 24-link schedule (warmup + 5 rounds), -fuse-ld selectors, per-linker thread control policy, monotonic nanosecond wall-clock timing, execve-based linker identity, verbatim unresolved path recording, version classification order, output freshness/regularity and probe validation, all-or-nothing failure cleanup, and the exact 4+6 key JSON report schema including ranking rule. The native timing plausibility bounds are also explicitly described (paragraph 5): 'at least four times the sum of those four reference durations in total wall time', sample sum not exceeding wall time, and median between one tenth and twenty times reference.",
+          "outcome": "pass"
+        },
+        "behavior_in_tests": {
+          "explanation": "All described behaviors are tested. test_outputs.py checks artifact properties (executable, <=1 MiB), native workload report schema/keys, version/family classification, sample count/positivity, median computation, ranking order, timing bounds, workload immutability, and the environment's Python/strace capability. The controlled protocol via verify_submission.py validates the 13 scenarios (success + 12 fault variants) covering schedule order, identity attribution, path consistency, family changes, output freshness, probe correctness, failure cleanup, and rank-from-observed-evidence.",
+          "outcome": "pass"
+        },
+        "informative_test_structure": {
+          "explanation": "Test functions have clear, descriptive names (test_artifact_is_self_contained_executable, test_tracing_runtime_works_for_ordinary_user, test_hidden_native_workload, test_authenticated_controlled_protocol, test_reward_channel_rejects_daemonized_untrusted_code). verify_submission.py separates validate_report, validate_success, validate_fault with named scenario constants. Assertions within tests are sequentially logical and grouped by concern.",
+          "outcome": "pass"
+        },
+        "anti_cheating_measures": {
+          "explanation": "Multiple layers resist trivial shortcuts: (1) solution/ and tests/ are excluded from the agent runtime image; (2) the hidden native workload uses a different seed (8675309) and requires real toolchain execution with proof-of-work timing bounds; (3) the authenticated controlled protocol uses HMAC-signed observer evidence with peer executable image verification and isolated uid 1001 execution; (4) the starter code is intentionally flawed (cached selector, time.time_ns); (5) the lab audit tool exposes raw events without interpreting correctness.",
+          "outcome": "pass"
+        },
+        "structured_data_schema": {
+          "explanation": "instruction.md provides an explicit JSON example with four top-level keys (schema_version, workload_id, results, ranking) and six result keys (linker, invoked_path, version, effective_threads, samples_ns, median_ns). Prose specifies types and constraints: integer schema_version=1, string workload_id, positive ints for samples, median as third-smallest of five, effective_threads as 1 or 2. workload-format.md documents the manifest schema separately.",
+          "outcome": "pass"
+        },
+        "pinned_dependencies": {
+          "explanation": "Both Dockerfiles pin base Ubuntu images via SHA256 digest. The environment Dockerfile uses only apt packages (exempt from pinning). The tests Dockerfile pins Python packages (pytest==9.1.1, pytest-json-ctrf==0.5.2). The agent artifact is a standalone Python 3 script with no external pip dependencies.",
+          "outcome": "pass"
+        },
+        "typos": {
+          "explanation": "No typos found across all files. Symlink names are consistent between Dockerfiles and C source checks (ld.gold-helper, ld.mold-alt, ld.lld2). Manifest keys (schema_version, workload_id, response_file, warmup_order, timed_rounds, probe) are correct in both workload generators. The task.toml line 13 is truncated in display but the actual file content is intact.",
+          "outcome": "pass"
+        },
+        "tests_or_solution_in_image": {
+          "explanation": "The environment Dockerfile copies only generate_workload.py, workload-format.md, starter-linkbench.py, and lab/ into the runtime image. Neither tests/ nor solution/ are included. These directories are used exclusively in the separate verifier image (tests/Dockerfile).",
+          "outcome": "pass"
+        },
+        "test_deps_in_image": {
+          "explanation": "Test-only dependencies (python3-venv, libssl-dev, util-linux, and pip-installed pytest/pytest-json-ctrf) are installed exclusively in tests/Dockerfile. The environment Dockerfile installs only runtime dependencies: binutils, lld, mold, strace, python3, tmux, and build-essential.",
+          "outcome": "pass"
+        },
+        "hardcoded_solution": {
+          "explanation": "The 643-line solution derives its answer through genuine computation: ptrace-based process tracing to identify actual linker processes from execve events, --version classification via substring matching, monotonic_ns timing of complete driver processes, output validation against manifest probes, median computation from measured samples, and ranking derivation from observed data. It does not echo or hardcode a precomputed answer.",
+          "outcome": "pass"
+        },
+        "file_reference_mentioned": {
+          "explanation": "instruction.md explicitly states the artifact path (/app/linkbench), the invocation interface (/app/linkbench <workload-directory> <report-json>), and references the workload documentation at /app/workload/README.md. The report JSON is specified as the second positional argument. All files the agent must produce or interact with are clearly named.",
+          "outcome": "pass"
+        }
+      },
+      "cost_usd": 0.0343474608,
+      "task_name": "",
+      "error": null
+    }
+  ]
+}

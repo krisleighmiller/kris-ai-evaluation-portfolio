@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "verified_at": "2026-10-16T22:23:53Z",
+  "package": "case-studies/broadcast-conform/task",
+  "harbor_version": "0.24.0",
+  "checks": {
+    "harbor_dry_run": {
+      "outcome": "passed",
+      "trials_recognized": 1
+    },
+    "clean_oracle_run": {
+      "outcome": "passed",
+      "reward": 1,
+      "tests_passed": 15,
+      "tests_failed": 0,
+      "exceptions": 0,
+      "runtime_seconds": 145,
+      "harbor_task_checksum": "6906b88b2207dd1fe3d6e0fa2bf5570edafc3d4bbf74eea8c1298580122e826b",
+      "master_bytes": 3744335,
+      "master_sha256": "f826181a9082d6d1c8624c016db8bc872bacd96fcd1137a3af92440804b26742"
+    },
+    "harbor_lint": {
+      "outcome": "not_available",
+      "reason": "Harbor 0.24.0, the current released CLI at verification time, does not expose a lint command."
+    }
+  }
+}

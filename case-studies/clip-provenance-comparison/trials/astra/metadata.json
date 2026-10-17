@@ -1,0 +1,11 @@
+{
+  "platform": "OpenCode",
+  "platform_version": "2.0.29",
+  "agent": "build",
+  "provider": "openai",
+  "model_route": "gpt-6-astra-pro",
+  "started_utc": "2026-10-15T19:15:03Z",
+  "last_updated_utc": "2026-10-15T19:33:17Z",
+  "run_isolation": "separate instance with a byte-identical private copy of the shared context",
+  "status": "completed"
+}

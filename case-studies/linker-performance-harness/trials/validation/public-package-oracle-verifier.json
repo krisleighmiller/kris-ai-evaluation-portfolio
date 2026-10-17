@@ -1,0 +1,74 @@
+{
+    "reportFormat": "CTRF",
+    "specVersion": "0.0.0",
+    "timestamp": "2026-10-16T22:29:04.359965+00:00",
+    "generatedBy": "pytest",
+    "results": {
+        "tool": {
+            "name": "pytest",
+            "version": "9.1.1"
+        },
+        "summary": {
+            "tests": 5,
+            "passed": 5,
+            "failed": 0,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0,
+            "start": 1792189734631,
+            "stop": 1792189744359
+        },
+        "environment": {
+            "buildName": "Pytest JSON CTRF Report",
+            "buildNumber": "000",
+            "buildUrl": "https://ctrf.io"
+        },
+        "tests": [
+            {
+                "name": "test_outputs.py::test_artifact_is_self_contained_executable",
+                "status": "passed",
+                "duration": 0,
+                "start": 1792189734664,
+                "stop": 1792189734664,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_tracing_runtime_works_for_ordinary_user",
+                "status": "passed",
+                "duration": 33,
+                "start": 1792189734664,
+                "stop": 1792189734697,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_hidden_native_workload",
+                "status": "passed",
+                "duration": 1150,
+                "start": 1792189734697,
+                "stop": 1792189735847,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_authenticated_controlled_protocol",
+                "status": "passed",
+                "duration": 8285,
+                "start": 1792189735847,
+                "stop": 1792189744132,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_reward_channel_rejects_daemonized_untrusted_code",
+                "status": "passed",
+                "duration": 227,
+                "start": 1792189744132,
+                "stop": 1792189744359,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            }
+        ]
+    }
+}

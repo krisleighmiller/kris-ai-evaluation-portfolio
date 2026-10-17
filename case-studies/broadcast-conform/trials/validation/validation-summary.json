@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "records": [
+    {
+      "public_id": "BC-VAL-ORACLE-01",
+      "category": "oracle",
+      "purpose": "Confirm that the reference solution can satisfy the verifier.",
+      "agent": "oracle",
+      "agent_version": "1.0.0",
+      "started_at": "2026-10-14T22:41:38.521545Z",
+      "finished_at": "2026-10-14T22:44:58.130245Z",
+      "outcome": "passed",
+      "reward": 1,
+      "tests_passed": 15,
+      "tests_failed": 0,
+      "master_bytes": 3744335,
+      "master_sha256": "f826181a9082d6d1c8624c016db8bc872bacd96fcd1137a3af92440804b26742",
+      "evidence": "oracle-verifier.json"
+    },
+    {
+      "public_id": "BC-VAL-CHECK-01",
+      "category": "task_quality_check",
+      "purpose": "Review task clarity, test coverage, anti-cheating separation, dependencies, and solution quality.",
+      "agent": "opencode",
+      "agent_version": "1.19.0",
+      "model_route": "openrouter/deepseek/deepseek-v4-pro",
+      "started_at": "2026-10-14T22:38:14.304177Z",
+      "finished_at": "2026-10-14T22:40:29.582295Z",
+      "outcome": "passed",
+      "reward": 1,
+      "criteria_passed": 11,
+      "criteria_failed": 0,
+      "cost_usd": 0.0268035168,
+      "evidence": "task-quality-check.json"
+    },
+    {
+      "public_id": "BC-VAL-CHECK-00",
+      "category": "task_quality_check_attempt",
+      "purpose": "Attempt the task-quality review that was later completed in BC-VAL-CHECK-01.",
+      "agent": "claude-code",
+      "agent_version": "2.1.300",
+      "model_route": "anthropic/claude-sonnet-4-6",
+      "started_at": "2026-10-14T22:33:30.466057Z",
+      "finished_at": "2026-10-14T22:34:42.926979Z",
+      "outcome": "aborted_before_evaluation",
+      "reason": "The runner was not authenticated.",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0,
+      "count_as_failed_check": false
+    }
+  ]
+}

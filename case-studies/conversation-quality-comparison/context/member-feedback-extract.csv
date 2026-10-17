@@ -1,0 +1,72 @@
+response_id,submitted_at,session_id,helpful,comment
+FB-2603-001,2026-03-13T09:32:44-05:00,S-2603-0041,yes,That was a sentence I can actually use with my mom.
+FB-2603-002,2026-03-17T19:29:55-05:00,S-2603-0061,yes,
+FB-2603-003,2026-03-22T18:07:46-05:00,,no,too much text for a short schedule question
+FB-2603-005,2026-03-23T18:21:09-05:00,S-2603-0094,yes,I knew the request would wait until Monday.
+FB-2603-004,2026-03-28T22:56:29-05:00,S-2603-0105,yes,
+FB-2604-001,2026-04-07T08:35:28-05:00,S-2604-0209,yes,
+FB-2604-002,2026-04-07T09:22:53-05:00,,yes,
+FB-2604-010,2026-04-07T11:34:12-05:00,S-2604-0127,no,"I wanted a person in the chat, not another number."
+FB-2604-003,2026-04-09T12:36:17-05:00,S-2604-0239,no,
+FB-2604-004,2026-04-18T13:17:36-05:00,S-2604-0328,yes,
+FB-2604-005,2026-04-20T15:05:26-05:00,S-2604-0351,yes,
+FB-2604-006,2026-04-20T18:11:02-05:00,S-2604-0316,no,I asked for a polite no and it kept offering social plans.
+FB-2604-007,2026-04-22T19:56:39-05:00,,yes,
+FB-2604-009,2026-04-24T12:13:38-05:00,S-2604-0376,yes,This time it just gave me the decline.
+FB-2604-008,2026-04-27T12:46:18-05:00,,yes,Helped me rearrange a bus errand.
+FB-2605-001,2026-05-06T18:06:43-05:00,S-2605-0482,yes,
+FB-2605-002,2026-05-09T20:51:29-05:00,,no,
+FB-2605-012,2026-05-10T17:06:41-05:00,S-2605-0506,yes,
+FB-2605-003,2026-05-12T10:14:36-05:00,S-2605-0523,yes,I took the short draft to my partner; we decided together.
+FB-2605-004,2026-05-12T15:12:14-05:00,,yes,
+FB-2605-005,2026-05-16T21:05:42-05:00,,no,"wanted a direct answer, not six options"
+FB-2605-006,2026-05-18T21:53:11-05:00,,yes,
+FB-2605-007,2026-05-24T07:45:14-05:00,,yes,
+FB-2605-008,2026-05-26T17:08:05-05:00,,no,
+FB-2605-009,2026-05-27T08:41:37-05:00,S-2605-0619,yes,
+FB-2605-013,2026-05-28T12:17:19-05:00,S-2605-0623,yes,Helped me ask about a shorter call.
+FB-2605-010,2026-05-30T08:39:03-05:00,,yes,"Useful list, but I changed the order."
+FB-2605-011,2026-05-30T09:48:27-05:00,S-2605-0658,no,Said no booking needed then told me it had not checked.
+FB-2606-001,2026-06-02T15:16:55-05:00,S-2606-0690,yes,
+FB-2606-002,2026-06-02T22:27:20-05:00,,yes,
+FB-2606-003,2026-06-05T16:27:20-05:00,,no,It repeated advice after I said I could not do it.
+FB-2606-004,2026-06-09T14:54:21-05:00,,yes,
+FB-2606-005,2026-06-12T11:48:28-05:00,,yes,Good for rehearsing a short call.
+FB-2606-008,2026-06-16T08:53:22-05:00,S-2606-0781,yes,Useful to know Monday was when to expect the desk.
+FB-2606-006,2026-06-21T16:34:32-05:00,S-2606-0822,yes,
+FB-2606-007,2026-06-22T13:07:11-05:00,S-2606-0824,no,I waited on Sunday because I thought a person might answer that night.
+FB-2606-009,2026-06-25T17:41:03-05:00,S-2606-0859,no,Kept giving tips when I said I needed to go.
+FB-2607-001,2026-07-07T07:11:27-05:00,S-2607-0910,no,
+FB-2607-002,2026-07-08T19:23:41-05:00,S-2607-0941,yes,It stayed with the ceramics question.
+FB-2607-003,2026-07-10T13:06:44-05:00,,yes,
+FB-2607-004,2026-07-11T15:43:47-05:00,S-2607-0936,yes,
+FB-2607-005,2026-07-13T08:30:38-05:00,S-2607-0979,no,
+FB-2607-006,2026-07-15T07:13:34-05:00,S-2607-0981,yes,
+FB-2607-007,2026-07-19T07:05:15-05:00,S-2607-1013,yes,
+FB-2607-008,2026-07-19T07:58:56-05:00,,no,Answer sounded certain about hours that might have changed.
+FB-2607-009,2026-07-19T16:27:49-05:00,S-2607-0989,no,
+FB-2607-010,2026-07-20T10:05:22-05:00,,yes,
+FB-2607-011,2026-07-25T09:36:47-05:00,S-2607-1041,yes,
+FB-2607-016,2026-07-25T14:29:18-05:00,S-2607-1058,yes,Did not pretend a peer worker was already talking to me.
+FB-2607-012,2026-07-27T18:08:25-05:00,S-2607-1042,yes,
+FB-2607-013,2026-07-29T11:17:39-05:00,S-2607-1082,yes,Less formal than the first draft.
+FB-2607-014,2026-07-29T21:16:18-05:00,S-2607-1074,yes,
+FB-2607-015,2026-07-30T11:55:16-05:00,S-2607-1067,yes,
+FB-2607-017,2026-07-31T23:41:26-05:00,S-2607-1091,yes,Asked whether it worked for me instead of setting a limit.
+FB-2608-001,2026-08-01T21:15:19-05:00,S-2608-1106,yes,
+FB-2608-002,2026-08-02T18:21:19-05:00,S-2608-1116,yes,
+FB-2608-003,2026-08-07T15:23:02-05:00,,no,
+FB-2608-004,2026-08-09T12:26:55-05:00,S-2608-1148,yes,It told me to check the museum rather than guess.
+FB-2608-005,2026-08-15T20:03:07-05:00,,no,I asked for one thing and got a list.
+FB-2608-006,2026-08-17T08:52:46-05:00,S-2608-1222,yes,
+FB-2608-007,2026-08-20T08:12:53-05:00,S-2608-1245,yes,Gave me a number to call without saying someone was on the way.
+FB-2608-016,2026-08-20T10:24:38-05:00,S-2608-1231,yes,This request was clear about waiting until morning.
+FB-2608-017,2026-08-21T15:09:11-05:00,S-2608-1258,yes,
+FB-2608-008,2026-08-24T07:27:56-05:00,S-2608-1306,yes,
+FB-2608-009,2026-08-25T22:13:05-05:00,,yes,
+FB-2608-010,2026-08-27T11:45:50-05:00,,yes,
+FB-2608-011,2026-08-27T19:58:19-05:00,,yes,
+FB-2608-012,2026-08-28T13:44:37-05:00,S-2608-1340,no,
+FB-2608-013,2026-08-28T16:51:25-05:00,,yes,clear once I asked for fewer words
+FB-2608-014,2026-08-29T10:38:13-05:00,S-2608-1341,no,
+FB-2608-015,2026-08-29T11:10:47-05:00,S-2608-1341,no,It does not know me better than my friends.

@@ -1,0 +1,179 @@
+{
+    "reportFormat": "CTRF",
+    "specVersion": "0.0.0",
+    "timestamp": "2026-10-14T23:08:30.084011+00:00",
+    "generatedBy": "pytest",
+    "results": {
+        "tool": {
+            "name": "pytest",
+            "version": "9.1.1"
+        },
+        "summary": {
+            "tests": 15,
+            "passed": 10,
+            "failed": 5,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0,
+            "start": 1792019286375,
+            "stop": 1792019310083
+        },
+        "environment": {
+            "buildName": "Pytest JSON CTRF Report",
+            "buildNumber": "000",
+            "buildUrl": "https://ctrf.io"
+        },
+        "tests": [
+            {
+                "name": "test_outputs.py::test_deliverable_exists",
+                "status": "passed",
+                "duration": 2,
+                "start": 1792019286604,
+                "stop": 1792019286606,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_inputs_unmodified",
+                "status": "passed",
+                "duration": 10,
+                "start": 1792019286606,
+                "stop": 1792019286616,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_stream_properties",
+                "status": "passed",
+                "duration": 60,
+                "start": 1792019286616,
+                "stop": 1792019286676,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_cfr_and_duration",
+                "status": "passed",
+                "duration": 1463,
+                "start": 1792019286676,
+                "stop": 1792019288139,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_keyframe_interval",
+                "status": "passed",
+                "duration": 3714,
+                "start": 1792019288139,
+                "stop": 1792019291853,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_limited_range_levels",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 1091,
+                "start": 1792019291853,
+                "stop": 1792019292944,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_limited_range_levels():\n        \"\"\"Spec: pixel data must genuinely be limited range in every segment.\n        The white and black patches of the strip must sit at Y=235/16, not\n        255/0. This is the check that catches a full-range source whose pixels\n        were retagged instead of converted: saturated RGB patches clip to\n        near-identical values under both range interpretations, but raw luma\n        cannot hide 255-vs-235.\"\"\"\n        for seg in GT[\"segments\"]:\n            t = seg[\"patches\"][\"master_t\"]\n            wx, wy = seg[\"patches\"][\"centers\"][0]\n            kx, ky = seg[\"patches\"][\"centers\"][1]\n            wl = qc.sample_luma(MASTER, t, wx, wy)\n            kl = qc.sample_luma(MASTER, t, kx, ky)\n>           assert abs(wl - LUMA_WHITE) <= LUMA_TOL, (\n                f\"segment {seg['index']} ({seg['source']}) white patch \"\n                f\"Y={wl:.1f} (expect ~{LUMA_WHITE})\")\nE           AssertionError: segment 4 (D.mp4) white patch Y=255.0 (expect ~235)\nE           assert 20.0 <= 5\nE            +  where 20.0 = abs((255.0 - 235))\n\ntests/test_outputs.py:236: AssertionError",
+                "message": "The test failed in the call phase due to an assertion error"
+            },
+            {
+                "name": "test_outputs.py::test_patch_colorimetry",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 1984,
+                "start": 1792019292944,
+                "stop": 1792019294928,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_patch_colorimetry():\n        \"\"\"Instruction/spec: color must actually be converted to BT.709 limited.\n        Every segment's patch strip, decoded as BT.709 limited, must match the\n        authoring-time reference values.\n    \n        This is also what enforces conversion_scope_note's prohibition on\n        gamut-mapping primaries or remapping the transfer curve, which no\n        assertion names directly: a SMPTE 170M to BT.709 primaries conversion\n        moves these references by up to 79 per channel against a tolerance of\n        10, so it fails here rather than passing unnoticed.\"\"\"\n        for seg in GT[\"segments\"]:\n            p = seg[\"patches\"]\n            for (cx, cy), exp in zip(p[\"centers\"], p[\"rgb\"]):\n                got = qc.sample_rgb(MASTER, p[\"master_t\"], cx, cy, \"bt709\", \"tv\")\n                err = max(abs(g - e) for g, e in zip(got, exp))\n>               assert err <= RGB_TOL, (\n                    f\"segment {seg['index']} ({seg['source']}) patch at \"\n                    f\"({cx},{cy}): got {[round(g) for g in got]} \"\n                    f\"expected {[round(e) for e in exp]} (err {err:.0f})\")\nE               AssertionError: segment 2 (B.mp4) patch at (600,64): got [247, 20, 0] expected [254, 0, 0] (err 20)\nE               assert 19.5851040851272 <= 10\n\ntests/test_outputs.py:259: AssertionError",
+                "message": "The test failed in the call phase due to an assertion error"
+            },
+            {
+                "name": "test_outputs.py::test_segment_content_and_cuts",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 1540,
+                "start": 1792019294928,
+                "stop": 1792019296468,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_segment_content_and_cuts():\n        \"\"\"Instruction/spec: the correct source frame must land at the correct\n        master time. Checked via the background hue signature at five times per\n        segment including 2 frames inside each side of every cut, so a boundary\n        displaced by 3+ frames samples the wrong source and fails hard;\n        finer placement inside segments is bounded by test_av_sync's\n        marker_placement_tolerance_ms.\"\"\"\n        for seg in GT[\"segments\"]:\n            for s in seg[\"samples\"]:\n                x, y = s[\"xy\"]\n                got = qc.sample_rgb(MASTER, s[\"master_t\"], x, y, \"bt709\", \"tv\")\n                err = max(abs(g - e) for g, e in zip(got, s[\"rgb\"]))\n>               assert err <= RGB_TOL, (\n                    f\"segment {seg['index']} ({seg['source']}) at master \"\n                    f\"t={s['master_t']}: got {[round(g) for g in got]} \"\n                    f\"expected {[round(e) for e in s['rgb']]} (err {err:.0f})\")\nE               AssertionError: segment 2 (B.mp4) at master t=23.5: got [11, 137, 0] expected [0, 140, 0] (err 11)\nE               assert 11.128290239726027 <= 10\n\ntests/test_outputs.py:277: AssertionError",
+                "message": "The test failed in the call phase due to an assertion error"
+            },
+            {
+                "name": "test_outputs.py::test_padding",
+                "status": "passed",
+                "duration": 1429,
+                "start": 1792019296468,
+                "stop": 1792019297897,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_av_sync",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 7773,
+                "start": 1792019297897,
+                "stop": 1792019305670,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_av_sync():\n        \"\"\"Spec: the master must contain exactly the flash/beep events the cut\n        list places inside it, each within marker_placement_tolerance_ms of its\n        cut-list position, and every flash/beep pair must agree within\n        av_sync_tolerance_ms.\"\"\"\n        fl, bp = flashes(), beeps()\n        exp = expected_markers()\n        for what, got in ((\"white flashes\", fl), (\"beeps\", bp)):\n            missing = [f\"{t:.3f}\" for t in exp\n                       if nearest(got, t) is None\n                       or abs(nearest(got, t) - t) > MATCH_WIN]\n            assert len(got) == len(exp), (\n                f\"expected {len(exp)} {what}, detected {len(got)}\"\n                + (f\"; nothing within {MATCH_WIN * 1000:.0f} ms of master \"\n                   f\"t={', '.join(missing)}\" if missing else \"\"))\n        for t in exp:\n            f = nearest(fl, t)\n            b = nearest(bp, t)\n            assert f is not None and abs(f - t) <= MATCH_WIN, (\n                f\"no flash near master t={t} (nearest {f})\")\n>           assert b is not None and abs(b - t) <= MATCH_WIN, (\n                f\"no beep near master t={t} (nearest {b})\")\nE           AssertionError: no beep near master t=26.0 (nearest 26.36)\nE           assert (26.36 is not None and 0.35999999999999943 <= 0.045)\nE            +  where 0.35999999999999943 = abs((26.36 - 26.0))\n\ntests/test_outputs.py:345: AssertionError",
+                "message": "The test failed in the call phase due to an assertion error"
+            },
+            {
+                "name": "test_outputs.py::test_no_synthesized_frames",
+                "status": "passed",
+                "duration": 0,
+                "start": 1792019305670,
+                "stop": 1792019305670,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_beep_spacing",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 6,
+                "start": 1792019305671,
+                "stop": 1792019305677,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_beep_spacing():\n        \"\"\"Spec: spacing between consecutive beeps inside a segment must match\n        the drift-normalized spacing of those beeps in the source audio within\n        beep_interval_tolerance_ms. The reference (beep_gaps_master) was measured\n        from each source's own beep onsets at authoring time with the recorder\n        clock drift fitted out, so a faithful conform matches it near-exactly\n        while uncorrected drift misses by ~30 ms. Catches residual drift that a\n        constant offset would hide.\n    \n        The references are deliberately the source's real spacing and not the\n        nominal 5 s of the marker grid: the recordings place their beeps on a\n        ~21 ms gate grid, so consecutive source gaps genuinely run 4.992-5.014 s.\n        Copying a source's audio faithfully reproduces that; re-timing beeps onto\n        the flash grid does not, and the spec sentence asks for the former.\"\"\"\n        bp = beeps()\n        for seg in GT[\"segments\"]:\n            marks = seg[\"markers_master\"]\n            gaps_exp = seg[\"beep_gaps_master\"]\n            if len(marks) < 2:\n                continue\n            got = [nearest(bp, t) for t in marks]\n            for i, expected_gap in enumerate(gaps_exp):\n                gap = got[i + 1] - got[i]\n>               assert abs(gap - expected_gap) <= SPACING_TOL, (\n                    f\"segment {seg['index']} ({seg['source']}): beep spacing \"\n                    f\"{gap:.4f}s vs expected {expected_gap:.4f}s\")\nE               AssertionError: segment 6 (F.mp4): beep spacing 5.0440s vs expected 5.0140s\nE               assert 0.0300000000000038 <= 0.01\nE                +  where 0.0300000000000038 = abs((5.044000000000004 - 5.014))\n\ntests/test_outputs.py:414: AssertionError",
+                "message": "The test failed in the call phase due to an assertion error"
+            },
+            {
+                "name": "test_outputs.py::test_segment_audio_provenance",
+                "status": "passed",
+                "duration": 398,
+                "start": 1792019305677,
+                "stop": 1792019306075,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_program_loudness",
+                "status": "passed",
+                "duration": 1821,
+                "start": 1792019306075,
+                "stop": 1792019307896,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_segment_loudness",
+                "status": "passed",
+                "duration": 2187,
+                "start": 1792019307896,
+                "stop": 1792019310083,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            }
+        ]
+    }
+}

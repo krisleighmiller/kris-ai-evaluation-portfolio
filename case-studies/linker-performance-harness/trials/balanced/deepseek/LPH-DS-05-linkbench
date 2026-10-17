@@ -1,0 +1,394 @@
+#!/usr/bin/env python3
+"""Benchmark four installed ELF linkers over one captured final link."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+LINKERS = ("bfd", "gold", "lld", "mold")
+SELECTOR_ARGS = {
+    "bfd": ["-fuse-ld=bfd"],
+    "gold": ["-fuse-ld=gold"],
+    "lld": ["-fuse-ld=lld"],
+    "mold": ["-fuse-ld=mold"],
+}
+THREAD_ARGS = {
+    "bfd": [],
+    "gold": ["-Wl,--threads", "-Wl,--thread-count=2"],
+    "lld": ["-Wl,--threads=2"],
+    "mold": ["-Wl,--threads=2", "-Wl,--no-fork"],
+}
+EFFECTIVE_THREADS = {"bfd": 1, "gold": 2, "lld": 2, "mold": 2}
+
+VERSION_MARKERS = [
+    ("mold", "mold"),
+    ("gnu gold", "gold"),
+    ("lld", "lld"),
+    ("gnu ld", "bfd"),
+]
+
+
+class HarnessError(RuntimeError):
+    """The benchmark harness could not complete its comparison."""
+
+
+def log(message: str) -> None:
+    print(f"linkbench: {message}", file=sys.stderr)
+
+
+def first_nonempty(text: str) -> str:
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return line
+    return ""
+
+
+def classify_version(line: str):
+    lower = line.lower()
+    for marker, linker_id in VERSION_MARKERS:
+        if marker in lower:
+            return linker_id
+    return None
+
+
+def run_cmd(cmd, *, cwd, env, timeout=300.0):
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=cwd,
+            env=env,
+            timeout=timeout,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise HarnessError(f"command timed out: {cmd!r}") from exc
+
+
+def load_manifest(workload_dir):
+    wdir = Path(workload_dir)
+    try:
+        manifest = json.loads((wdir / "workload.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HarnessError(f"cannot read workload manifest: {exc}") from exc
+    if manifest.get("schema_version") != 1:
+        raise HarnessError("unsupported workload schema")
+
+    wid = manifest.get("workload_id")
+    if not isinstance(wid, str):
+        raise HarnessError("workload_id is missing")
+
+    warmup = manifest.get("warmup_order")
+    if not isinstance(warmup, list) or len(warmup) != 4 or sorted(warmup) != sorted(LINKERS):
+        raise HarnessError("warmup_order must contain the four linker IDs")
+
+    rounds = manifest.get("timed_rounds")
+    if not isinstance(rounds, list) or len(rounds) != 5:
+        raise HarnessError("timed_rounds must contain five rounds")
+    for i, order in enumerate(rounds):
+        if not isinstance(order, list) or len(order) != 4 or sorted(order) != sorted(LINKERS):
+            raise HarnessError(f"timed_rounds[{i}] must contain the four linker IDs")
+
+    response_name = manifest.get("response_file")
+    if not isinstance(response_name, str):
+        raise HarnessError("response_file is missing or not a string")
+    response_path = wdir / response_name
+    if not response_path.is_file():
+        raise HarnessError(f"response file does not exist: {response_path}")
+
+    return manifest, response_path
+
+
+def strace_link(cmd, trace_path, *, cwd, env):
+    strace_cmd = [
+        "strace", "-f", "-e", "trace=execve",
+        "-o", str(trace_path),
+        *cmd,
+    ]
+    return run_cmd(strace_cmd, cwd=cwd, env=env)
+
+
+_EXECVE_RE = re.compile(r'execve\("([^"]+)",\s*\[')
+
+
+def parse_linker_exe(trace_path, output):
+    """Find the linker that performed the link by locating the process whose
+    arguments contain the output file path."""
+    linker_matches = []
+    link_output = str(output)
+    try:
+        with open(trace_path, "r") as fh:
+            for line in fh:
+                match = _EXECVE_RE.search(line)
+                if not match:
+                    continue
+                exe = match.group(1)
+                name = exe.rsplit("/", 1)[-1] if "/" in exe else exe
+                name_lower = name.lower()
+                if "ld" in name_lower or "mold" in name_lower:
+                    # Check if this process has the output file in its args
+                    has_output = link_output in line
+                    linker_matches.append((exe, has_output))
+    except OSError as exc:
+        raise HarnessError(f"cannot read strace output: {exc}") from exc
+
+    if not linker_matches:
+        raise HarnessError("no linker-shaped process found in execve trace")
+
+    # Prefer the process whose arguments contain the output path
+    for exe, has_output in linker_matches:
+        if has_output:
+            return exe
+
+    # Fallback: last linker-shaped process
+    return linker_matches[-1][0]
+
+
+def probe_version(exe_path, *, cwd, env):
+    result = run_cmd([exe_path, "--version"], cwd=cwd, env=env, timeout=20.0)
+    if result.returncode:
+        raise HarnessError(
+            f"{exe_path} --version failed: {result.stderr.strip()}"
+        )
+    version_line = first_nonempty(result.stdout)
+    if not version_line:
+        raise HarnessError(f"{exe_path} has no version output")
+    linker_id = classify_version(version_line)
+    if linker_id is None:
+        raise HarnessError(
+            f"cannot classify {exe_path} version output: {version_line}"
+        )
+    return linker_id, version_line
+
+
+def check_output(output, manifest, *, cwd, env):
+    try:
+        st = output.lstat()
+    except FileNotFoundError:
+        raise HarnessError(f"output {output} does not exist")
+
+    if not stat.S_ISREG(st.st_mode):
+        raise HarnessError(f"output {output} is not a regular file")
+
+    probe = manifest["probe"]
+    cmd = [str(output) if a == "{output}" else a for a in probe["argv"]]
+    result = run_cmd(cmd, cwd=cwd, env=env, timeout=30.0)
+
+    expected_rc = probe["expected_returncode"]
+    if result.returncode != expected_rc:
+        raise HarnessError(
+            f"probe return code {result.returncode} != {expected_rc}"
+        )
+
+    exp_out = probe.get("expected_stdout")
+    if exp_out is not None and result.stdout != exp_out:
+        raise HarnessError(
+            f"probe stdout mismatch: {result.stdout!r} != {exp_out!r}"
+        )
+
+    exp_err = probe.get("expected_stderr")
+    if exp_err is not None and result.stderr != exp_err:
+        raise HarnessError(
+            f"probe stderr mismatch: {result.stderr!r} != {exp_err!r}"
+        )
+
+
+def do_link(linker_id, cmd, output, trace_path, manifest, *, cwd, env, discovered):
+    if output.exists():
+        output.unlink()
+
+    start = time.monotonic_ns()
+    result = strace_link(cmd, trace_path, cwd=cwd, env=env)
+    elapsed = time.monotonic_ns() - start
+
+    if result.returncode:
+        raise HarnessError(f"{linker_id} link failed: {result.stderr.strip()}")
+
+    exe_path = parse_linker_exe(trace_path, output)
+
+    expected_path = discovered[linker_id]["invoked_path"]
+    if exe_path != expected_path:
+        raise HarnessError(
+            f"{linker_id} path changed: {exe_path} != {expected_path}"
+        )
+
+    actual_id, _ = probe_version(exe_path, cwd=cwd, env=env)
+    if actual_id != linker_id:
+        raise HarnessError(f"{linker_id} link executed {exe_path} which is {actual_id}")
+
+    check_output(output, manifest, cwd=cwd, env=env)
+
+    if elapsed <= 0:
+        elapsed = 1
+    return elapsed
+
+
+def benchmark(workload_dir, report_path):
+    workload_dir = Path(workload_dir).resolve()
+    report_path = Path(report_path)
+
+    # Remove existing report
+    try:
+        report_path.unlink()
+    except FileNotFoundError:
+        pass
+    except OSError:
+        pass
+
+    try:
+        manifest, response_path = load_manifest(workload_dir)
+
+        with tempfile.TemporaryDirectory(prefix="linkbench-") as tmp_str:
+            scratch = Path(tmp_str)
+            tmpfiles = scratch / "tmp"
+            tmpfiles.mkdir()
+
+            env = os.environ.copy()
+            env.update({
+                "TMPDIR": str(tmpfiles),
+                "TMP": str(tmpfiles),
+                "TEMP": str(tmpfiles),
+                "LC_ALL": "C",
+                "LANG": "C",
+            })
+
+            # --- warmup phase ---
+            discovered = {}
+            for linker_id in manifest["warmup_order"]:
+                output = scratch / f"out-{linker_id}"
+                if output.exists():
+                    output.unlink()
+
+                cmd = [
+                    manifest["driver"],
+                    *SELECTOR_ARGS[linker_id],
+                    *THREAD_ARGS[linker_id],
+                    f"@{response_path}",
+                    "-o", str(output),
+                ]
+
+                trace = scratch / f"trace-warmup-{linker_id}"
+                result = strace_link(cmd, trace, cwd=workload_dir, env=env)
+
+                if result.returncode:
+                    raise HarnessError(
+                        f"{linker_id} warmup failed: {result.stderr.strip()}"
+                    )
+
+                exe_path = parse_linker_exe(trace, output)
+                actual_id, version = probe_version(exe_path, cwd=workload_dir, env=env)
+
+                if actual_id != linker_id:
+                    raise HarnessError(
+                        f"{linker_id} warmup executed {exe_path} which is {actual_id}"
+                    )
+
+                check_output(output, manifest, cwd=workload_dir, env=env)
+
+                if linker_id in discovered:
+                    if discovered[linker_id]["invoked_path"] != exe_path:
+                        raise HarnessError(
+                            f"{linker_id} path changed during warmup: "
+                            f"{discovered[linker_id]['invoked_path']} != {exe_path}"
+                        )
+                else:
+                    discovered[linker_id] = {
+                        "invoked_path": exe_path,
+                        "version": version,
+                    }
+                log(f"warmed {linker_id}: {exe_path}")
+
+            # --- timed rounds ---
+            samples = {linker_id: [] for linker_id in LINKERS}
+            for round_idx, round_order in enumerate(manifest["timed_rounds"]):
+                for linker_id in round_order:
+                    output = scratch / f"out-{linker_id}"
+                    if output.exists():
+                        output.unlink()
+
+                    cmd = [
+                        manifest["driver"],
+                        *SELECTOR_ARGS[linker_id],
+                        *THREAD_ARGS[linker_id],
+                        f"@{response_path}",
+                        "-o", str(output),
+                    ]
+
+                    trace = scratch / f"trace-{round_idx}-{linker_id}"
+                    elapsed = do_link(
+                        linker_id, cmd, output, trace, manifest,
+                        cwd=workload_dir, env=env, discovered=discovered,
+                    )
+                    samples[linker_id].append(elapsed)
+                    log(f"measured {linker_id} round {round_idx + 1}: {elapsed} ns")
+
+            # --- compute results ---
+            medians = {}
+            for linker_id in LINKERS:
+                medians[linker_id] = sorted(samples[linker_id])[2]
+
+            results = []
+            for linker_id in LINKERS:
+                results.append({
+                    "linker": linker_id,
+                    "invoked_path": discovered[linker_id]["invoked_path"],
+                    "version": discovered[linker_id]["version"],
+                    "effective_threads": EFFECTIVE_THREADS[linker_id],
+                    "samples_ns": samples[linker_id],
+                    "median_ns": medians[linker_id],
+                })
+
+            ranking = sorted(LINKERS, key=lambda lid: (medians[lid], lid))
+
+            report = {
+                "schema_version": 1,
+                "workload_id": manifest["workload_id"],
+                "results": results,
+                "ranking": ranking,
+            }
+
+            report_path.write_text(
+                json.dumps(report, indent=2) + "\n", encoding="utf-8"
+            )
+
+    except Exception:
+        try:
+            report_path.unlink()
+        except FileNotFoundError:
+            pass
+        except OSError:
+            pass
+        raise
+
+    log(f"wrote report to {report_path}")
+
+
+def main():
+    if len(sys.argv) != 3:
+        print(
+            "usage: /app/linkbench <workload-directory> <report-json>",
+            file=sys.stderr,
+        )
+        return 2
+
+    try:
+        benchmark(sys.argv[1], sys.argv[2])
+    except (HarnessError, OSError, KeyError, TypeError, ValueError) as exc:
+        log(str(exc))
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

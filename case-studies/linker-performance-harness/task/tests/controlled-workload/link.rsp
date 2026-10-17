@@ -1,0 +1,5 @@
+controlled-root.o
+-Wl,--start-group
+libcontrolled-a.a
+libcontrolled-b.a
+-Wl,--end-group

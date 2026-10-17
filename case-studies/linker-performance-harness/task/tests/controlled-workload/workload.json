@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "workload_id": "controlled-271828",
+  "driver": "/opt/control/bin/gcc",
+  "response_file": "link.rsp",
+  "warmup_order": ["gold", "lld", "mold", "bfd"],
+  "timed_rounds": [
+    ["mold", "gold", "bfd", "lld"],
+    ["lld", "gold", "bfd", "mold"],
+    ["gold", "lld", "bfd", "mold"],
+    ["bfd", "gold", "mold", "lld"],
+    ["lld", "mold", "gold", "bfd"]
+  ],
+  "probe": {
+    "argv": ["{output}", "--verify", "controlled-token-271828"],
+    "expected_returncode": 0,
+    "expected_stdout": "CONTROL_OK\n",
+    "expected_stderr": ""
+  }
+}

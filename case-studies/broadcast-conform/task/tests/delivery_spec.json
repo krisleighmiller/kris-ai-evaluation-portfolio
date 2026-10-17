@@ -1,0 +1,83 @@
+{
+  "_note": "Verifier copy of the delivery spec. This is the grading source of truth for every threshold; the agent-visible copy at /app/delivery_spec.json carries the same normative requirements and the same numbers, and omits only the measurement recipes and diagnostic commentary recorded here for reviewers.",
+  "master": {
+    "path": "/app/master.mp4",
+    "container": "mp4",
+    "container_note": "A genuine MP4: the file must name an ISO base-media brand, either as its major brand or among its compatible brands. Any of isom, iso2, iso4, iso5, iso6, mp41, mp42, mp71, avc1, m4v, mmp4, dash, cmfc, msdh counts, which is what a standard MP4 mux writes. The QuickTime brand 'qt  ' does not, so a QuickTime/MOV file renamed to .mp4 does not satisfy this even though the two formats share a demuxer family. The allowlist is published in the agent-visible copy on purpose: it is the only container criterion, and grading a delivery against a list the agent cannot read would let a legitimately muxed MP4 fail on a hidden rule. Accepting a compatible brand as well as the major brand is how ISO base media advertises conformance; the 'qt  ' brand carried by C.mov and E.mov declares only itself, so a renamed MOV still fails. format_name alone cannot do this job: ffprobe reports mov,mp4,m4a,3gp,3g2,mj2 for both containers.",
+    "streams_note": "The master must contain exactly one video stream and one audio stream and nothing else: no data tracks, attachments, cover art, chapters-as-streams, or secondary audio.",
+    "video_codec": "h264",
+    "width": 1920,
+    "height": 1080,
+    "sample_aspect_ratio": "1:1",
+    "frame_rate": "30/1",
+    "constant_frame_rate_required": true,
+    "duration_note": "The cut list's master duration applies to the whole file, not just the video stream: the video frame count and video duration must match it within duration_tolerance_frames, and the container duration and the audio stream duration must match it within program_duration_tolerance_ms. A trailing audio tail or a truncated audio track fails even when the video is exactly right. Sizing: the audio bound is looser than the video one because an AAC stream is quantized to 1024-sample frames (21 ms at 48 kHz) and an untrimmed encoder tail adds one or two of those; 100 ms carries that with margin while keeping the audible cases out. A correct conform lands on 60.000 s in both fields, so the margin here is the whole bound.",
+    "scan": "progressive",
+    "pix_fmt": "yuv420p",
+    "color": {
+      "matrix": "bt709",
+      "primaries": "bt709",
+      "transfer": "bt709",
+      "range": "tv",
+      "tags_required": true,
+      "tags_note": "All four color values must be reported for the video stream by standard probing (ffprobe stream color_space, color_primaries, color_transfer, color_range). Encoders do not always propagate CLI color flags into the delivered stream, so the check reads the finished file.",
+      "note": "Pixel data must actually be encoded in BT.709 limited range. A source in another matrix or range must be converted, not retagged. Two sources in this batch are deliberately mistagged (F.mp4 claims limited range over full-range pixels, G.mp4 claims SMPTE 170M over BT.709 pixels), so believing the tags produces a master that fails colorimetry QC. D.mp4 is the mirror case and its own hazard: its full-range picture is honestly tagged, but a plain raw decode asks swscale to convert a full-range input to a limited-range pixel format, and it rescales 0-255 to 16-235 on the way out (ffmpeg 6.1 in the agent image does this; 7.1 does not), so a naive measurement reads D.mp4 as limited while a filter chain still receives its full-range pixels. Trusting D.mp4's honest tag, pinning in_range/out_range on the measuring decode, or measuring in-graph with signalstats all give the right answer; measuring through an unpinned raw decode and then converting does not.",
+      "conversion_scope_note": "Where a source's picture is BT.601 (SMPTE 170M), the required conversion is of the YCbCr matrix and signal range only. SMPTE 170M and BT.709 primaries and transfer are treated as display-compatible for this delivery: do not gamut-map primaries or remap the transfer curve. Tag the master BT.709 across all four fields regardless."
+    },
+    "max_keyframe_interval_frames": 60,
+    "keyframe_note": "The interval bound applies across the entire program: the first frame must be a keyframe and the final GOP, measured to the end of the file, must also respect the bound.",
+    "audio": {
+      "codec": "aac",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "integrated_loudness_lufs": -14.0,
+      "integrated_loudness_tolerance_lu": 0.5,
+      "true_peak_max_dbtp": -1.0,
+      "true_peak_tolerance_db": 0.2,
+      "true_peak_note": "true_peak_max_dbtp is the delivery limit; the oversampled true-peak reading of the delivered file is allowed true_peak_tolerance_db above it, because the file is measured by a different ffmpeg build than the one that wrote it and that reading is not guaranteed identical across builds. Aim at the limit, not at the allowance. Sizing: a straight conform that only normalizes loudness lands at about -1.5 dBTP, so the margin over the limit is naturally about 0.5 dB while segment_loudness_tolerance_lu permits a segment to sit 1 LU hot. An agent that limits to exactly -1.0 dBTP would otherwise have zero margin against a cross-build reading; 0.2 dB covers that without moving the delivery limit.",
+      "segment_loudness_tolerance_lu": 1.0,
+      "segment_loudness_note": "For each segment in the cut list, the mean short-term loudness (EBU R128, 3 s window) measured across that segment must sit within segment_loudness_tolerance_lu of the program integrated loudness. The measurement is the mean of the short-term readings taken over that segment's audio on its own, counting complete 3 s windows, so no window straddles a cut and each segment has to be level in its own right. It is the arithmetic mean of the reported LUFS values, not an energy average of them; on this material the two agree well inside the tolerance, so either way of levelling a segment passes. G.mp4's bed is mixed about 11 LU hotter than the rest, so a single global gain cannot satisfy both this and the program integrated target. On this material the arithmetic mean of short-term readings and a per-segment integrated measurement agree to within 0.16 LU, so either basis for normalizing passes the 1.0 LU bound.",
+      "segment_audio_provenance_note": "Each segment's audio must be that segment's own source audio, conformed per this spec. Substituting another source's audio or synthesizing a replacement track does not satisfy this: every source's audio bed carries a distinct identifying tone, checked per segment in the delivered master."
+    },
+    "av_sync_tolerance_ms": 50,
+    "av_sync_measurement": "Sync offset is the difference between the presentation start time of the first master frame showing a white flash and the onset of its paired 1 kHz beep, measured in the delivered master. Every flash and beep pair that the cut list places inside the master must agree within av_sync_tolerance_ms. The tolerance allows for flash quantization to the master frame grid; it is not a budget for audio drift or for an uncorrected constant slip. Sizing: the recordings gate their beeps on the encoder's audio frame boundaries, so a beep onset sits up to about 21 ms off its paired flash in the source itself and any faithful conform inherits that (measured spread in a correct master: -26 to +8 ms). Add the master frame grid and a correct delivery can reach the high twenties, while the defects this check exists for are E.mov's 350 ms slip and F.mp4's drift, which reaches 170 ms. 50 ms leaves a correct master real headroom and still fails both by several times over; do not tighten it toward the quantization floor.",
+    "beep_interval_tolerance_ms": 10,
+    "beep_interval_note": "Within each segment, the spacing between the onsets of consecutive sync beeps in the delivered master must match the spacing of those same beep onsets as measured in the source audio, with any recorder clock drift removed, within beep_interval_tolerance_ms. The reference is that measured source spacing and not the nominal interval the markers look like they are aiming at: consecutive gaps in a source are not all equal, and the recordings are not expected to be regular. Removing drift means removing a clock-rate error fitted across the recording, so carrying a source's own audio through the conform satisfies this; re-timing individual beeps onto a regular grid does not, and is not what this asks for. This is measured in the audio domain and is not subject to frame quantization; drifting audio fails this even when a constant offset centers the absolute sync measurement. Sizing: the recordings gate their beeps on encoder frame boundaries, so consecutive source gaps genuinely run 4.992-5.014 s and the references record that; the two sentences above exist because a reader could otherwise take 'drift removed' to mean 'snap the beeps onto the 5 s marker grid', which misses two of the five checked gaps by 12-14 ms against a 10 ms tolerance. Uncorrected drift misses by 30 ms, so the tolerance still separates the case it is for.",
+    "cut_point_note": "Each segment must cover exactly the span of source content the cut list names, in order: all of that span, nothing from outside it, and nothing borrowed from a neighbouring segment across a cut. Which source frames land in the master is then decided by the rate conversion, and repeating or dropping frames is expected wherever a source's rate differs from the master's; only the span is fixed, not the frame count. What is not acceptable is a picture that is in no source frame at all, so each master frame must be a source frame rather than one mixed from two of them by a blending or motion-interpolating rate conversion. This is checked at the sync flashes, where a mixed frame is unmistakable: every frame of a faithful conform is either a full-frame flash or ordinary picture, never a blend of the two. Span and placement are verified by decoding and matching frames against expected source content two frames inside each side of every cut point, bounded further by marker_placement_tolerance_ms; within a segment that is a content match rather than a frame-identity match, so it bounds placement to about a frame rather than proving no interior frame was repeated or dropped. The no-synthesis half is verified by test_no_synthesized_frames at the flashes, the one place in this material where consecutive frames differ sharply, and the spec sentence says so rather than implying a broader check. Scope, measured: an unconditional blend puts 22 frames of a 1800-frame master inside the band, while ffmpeg's framerate and minterpolate filters suppress blending at scene changes, keep the flash frames at 235.0 exactly, and pass. Their blends elsewhere move the background hue by about 0.14 of a code value, which nothing measurable on this near-static material separates from a faithful frame, so the check is stated as what it is instead of promising more. Wording matters here: 'none of the named frames missing' would read as a frame-identity requirement that no conform of the 24, 25 or 59.94 fps sources to 30 fps can satisfy, so the requirement is stated as span coverage.",
+    "marker_placement_tolerance_ms": 45,
+    "marker_placement_note": "Every white flash and every beep must land within marker_placement_tolerance_ms of the master-timeline position the cut list implies for it, and the master must contain exactly the flash and beep events the cut list places inside it: none missing, none extra. The implied position of a marker is master_start_sec + (its time in the source's displayed timeline - source_in_sec), which is where a faithful conform of the named span puts it with no special handling; markers are not to be re-timed. Sizing: this must reject a segment placed two or more frames wrong (67 ms) and an uncorrected audio slip (350 ms) while absorbing the beep gate quantization described under av_sync_measurement, which a correct conform cannot remove. 45 ms sits between one frame (33 ms, tolerated here and bounded instead by cut_point_note) and two frames."
+  },
+  "source_interpretation": {
+    "tag_reliability": "The color metadata in a source may be wrong. Where a source's color tags disagree with its picture, the picture is authoritative: interpret every source by what its pixels actually carry. The patch strip at the top of every source makes this measurable: white and black sit at 235/16 in limited range and 255/0 in full range, and only the correct matrix decodes the saturated patches to in-gamut RGB.",
+    "untagged_color": {
+      "matrix": "smpte170m",
+      "primaries": "smpte170m",
+      "transfer": "smpte170m",
+      "range": "tv",
+      "note": "Any source whose bitstream carries no color tags, and whose picture gives no better evidence, must be interpreted as BT.601 (SMPTE 170M) limited range."
+    },
+    "rotation": "Display-rotation metadata must be applied; the displayed orientation is the authoritative picture.",
+    "display_geometry": "A source's displayed picture is its coded raster with display rotation and pixel aspect ratio (sample aspect ratio) applied. Anamorphic sources must be resolved to square pixels, and the master itself must be square-pixel. B.mp4 is coded 1440x1080 with 4:3 pixels and displays as 1920x1080: treating its coded raster as square pixels puts the patch strip and the background sample points in the wrong place.",
+    "scaling": {
+      "mode": "fit",
+      "preserve_aspect_ratio": true,
+      "position": "center",
+      "pad_color": "black",
+      "note": "Every source is scaled to fit inside 1920x1080 with its displayed aspect ratio preserved, upscaling if it is smaller than the frame, then centered, with black padding (limited-range black: Y=16, neutral chroma) covering whatever the picture does not. No cropping and no stretching. Two sources need padding (E.mov displays 4:3, G.mp4 displays 5:4); the rest fill the frame exactly and are checked for the absence of padding at the frame edges."
+    }
+  },
+  "tolerances": {
+    "patch_rgb_tolerance": 10,
+    "luma_tolerance": 5,
+    "chroma_neutral_tolerance": 4,
+    "duration_tolerance_frames": 2,
+    "program_duration_tolerance_ms": 100,
+    "bed_hz_relative_tolerance": 0.03,
+    "note": "Bounds applied when the delivered master is compared against reference values derived from the source footage at authoring time: per-channel RGB error of picture content decoded as BT.709 limited, raw luma error, chroma deviation from neutral (128), video frame count and video duration against the cut list, container and audio-stream duration against the cut list's program length, and relative error of a segment's audio bed frequency. Reviewer detail: content is compared within patch_rgb_tolerance per channel; the strip's white and black patches must sit at the limited-range reference levels within luma_tolerance (raw Y-plane values), which is what catches full-range pixels that were retagged rather than converted; padding regions must match limited-range black within luma_tolerance with both chroma planes within chroma_neutral_tolerance of neutral, and segments that fill the frame must NOT be black at the side edges; the closest pair of source beds sits about 5% apart, so bed_hz_relative_tolerance identifies substituted audio."
+  },
+  "verifier_measurement": {
+    "_note": "How the QC suite measures, not thresholds the agent is held to. These live outside the tolerances block on purpose: the instruction tells the agent that every tolerance the master is held to lives in /app/delivery_spec.json, and that has to be true of every key under tolerances. The levels below are the definition of limited range rather than a choice made here. Sampling geometry is not duplicated here: the box size lives once, as the box argument of qc_lib's samplers.",
+    "reference_luma_white": 235,
+    "reference_luma_black": 16
+  }
+}

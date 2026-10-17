@@ -1,0 +1,18 @@
+{
+  "status_counts": {
+    "confident": 137,
+    "unidentified": 40,
+    "uncertain": 23
+  },
+  "source_counts": {
+    "high": 153,
+    "unidentified": 40,
+    "uncertain": 7
+  },
+  "total": 200,
+  "positive_controls": 18,
+  "correct_positive_sources": 18,
+  "negative_controls": 6,
+  "holdout_controls": 12,
+  "correct_holdout_sources": 12
+}

@@ -1,0 +1,631 @@
+#!/usr/bin/env python3
+"""Benchmark GNU BFD ld, GNU gold, LLVM lld and mold over one captured link.
+
+Usage: linkbench <workload-directory> <report-json>
+
+The benchmark replays the captured final compiler-driver link described by
+the workload manifest.  Every scheduled link is run under strace so the
+linker that actually performed the link is identified from the execve
+events the driver performs, never from the -fuse-ld selector alone.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+
+LINKERS = ("bfd", "gold", "lld", "mold")
+THREAD_ARGS = {
+    "bfd": [],
+    "gold": ["-Wl,--threads", "-Wl,--thread-count=2"],
+    "lld": ["-Wl,--threads=2"],
+    "mold": ["-Wl,--threads=2", "-Wl,--no-fork"],
+}
+EFFECTIVE_THREADS = {"bfd": 1, "gold": 2, "lld": 2, "mold": 2}
+
+LINK_TIMEOUT = 600.0
+PROBE_TIMEOUT = 60.0
+VERSION_TIMEOUT = 60.0
+
+TRACE_FILTER = (
+    "execve,openat,open,creat,rename,renameat,renameat2,"
+    "clone,clone3,fork,vfork"
+)
+_EXECVE_RE = re.compile(rb'\bexecve\("((?:[^"\\]|\\.)*)"')
+_QUOTED_RE = re.compile(rb'"((?:[^"\\]|\\.)*)"')
+_RESULT_RE = re.compile(rb"=\s*(-?\d+)\s*$")
+_SPAWN_RE = re.compile(rb"\b(?:clone|clone3|fork|vfork)\(")
+_OPEN_RE = re.compile(rb"\b(?:openat|open|creat)\(")
+_RENAME_RE = re.compile(rb"\b(?:rename|renameat|renameat2)\(")
+_PID_RE = re.compile(rb"^(\d+)[ \t]+(.*)$")
+_C_ESCAPES = {
+    b"a": 0x07,
+    b"b": 0x08,
+    b"t": 0x09,
+    b"n": 0x0A,
+    b"v": 0x0B,
+    b"f": 0x0C,
+    b"r": 0x0D,
+    b'"': 0x22,
+    b"\\": 0x5C,
+}
+
+
+class BenchError(RuntimeError):
+    """The benchmark could not complete a valid run."""
+
+
+def log(message: str) -> None:
+    print(f"linkbench: {message}", file=sys.stderr, flush=True)
+
+
+def first_nonempty_line(text: str) -> str:
+    for line in text.splitlines():
+        if line.strip():
+            return line
+    return ""
+
+
+def validate_order(value, label):
+    if (
+        not isinstance(value, list)
+        or len(value) != 4
+        or sorted(value) != sorted(LINKERS)
+    ):
+        raise BenchError(f"{label} must list each of {LINKERS} exactly once")
+    return list(value)
+
+
+def load_manifest(workload: str):
+    manifest_path = os.path.join(workload, "workload.json")
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise BenchError(f"cannot read workload manifest: {exc}") from exc
+    if not isinstance(manifest, dict):
+        raise BenchError("workload manifest is not a JSON object")
+    if manifest.get("schema_version") != 1:
+        raise BenchError("unsupported workload schema version")
+    workload_id = manifest.get("workload_id")
+    if not isinstance(workload_id, str) or not workload_id:
+        raise BenchError("workload_id is missing")
+    driver = manifest.get("driver")
+    if not isinstance(driver, str) or not os.path.isabs(driver):
+        raise BenchError("driver must be an absolute path")
+    warmup = validate_order(manifest.get("warmup_order"), "warmup_order")
+    rounds = manifest.get("timed_rounds")
+    if not isinstance(rounds, list) or len(rounds) != 5:
+        raise BenchError("timed_rounds must contain exactly five rounds")
+    rounds = [
+        validate_order(order, f"timed_rounds[{index}]")
+        for index, order in enumerate(rounds)
+    ]
+    response_file = manifest.get("response_file")
+    if not isinstance(response_file, str) or not response_file:
+        raise BenchError("response_file is missing")
+    if os.path.isabs(response_file) or os.path.normpath(response_file).startswith(".."):
+        raise BenchError("response_file must stay within the workload")
+    response_path = os.path.join(workload, response_file)
+    if not os.path.isfile(response_path):
+        raise BenchError(f"response file does not exist: {response_path}")
+    probe = manifest.get("probe")
+    if not isinstance(probe, dict):
+        raise BenchError("probe is missing")
+    argv = probe.get("argv")
+    if (
+        not isinstance(argv, list)
+        or not argv
+        or not all(isinstance(item, str) for item in argv)
+    ):
+        raise BenchError("probe.argv must be a nonempty array of strings")
+    if not isinstance(probe.get("expected_returncode"), int):
+        raise BenchError("probe.expected_returncode must be an integer")
+    if not isinstance(probe.get("expected_stdout"), str):
+        raise BenchError("probe.expected_stdout must be a string")
+    if not isinstance(probe.get("expected_stderr"), str):
+        raise BenchError("probe.expected_stderr must be a string")
+    return manifest, warmup, rounds, response_path
+
+
+def remove_path(path: str, label: str) -> None:
+    try:
+        os.unlink(path)
+    except FileNotFoundError:
+        return
+    except IsADirectoryError as exc:
+        raise BenchError(f"{label} is a directory: {path}") from exc
+    except OSError as exc:
+        raise BenchError(f"cannot remove {label} {path}: {exc}") from exc
+
+
+def c_unescape(data: bytes) -> bytes:
+    out = bytearray()
+    index = 0
+    length = len(data)
+    while index < length:
+        byte = data[index : index + 1]
+        if byte != b"\\" or index + 1 >= length:
+            out += byte
+            index += 1
+            continue
+        nxt = data[index + 1 : index + 2]
+        mapped = _C_ESCAPES.get(nxt)
+        if mapped is not None:
+            out.append(mapped)
+            index += 2
+            continue
+        if nxt.isdigit():
+            end = index + 1
+            while end < length and end < index + 4 and data[end : end + 1].isdigit():
+                end += 1
+            try:
+                out.append(int(data[index + 1 : end], 8) & 0xFF)
+            except ValueError:
+                out += data[index : end]
+            index = end
+            continue
+        if nxt == b"x":
+            end = index + 2
+            while end < length and data[end : end + 1].isalnum():
+                end += 1
+            try:
+                out.append(int(data[index + 2 : end], 16) & 0xFF)
+                index = end
+                continue
+            except ValueError:
+                pass
+        out += nxt
+        index += 2
+    return bytes(out)
+
+
+def linker_shaped(path: str) -> bool:
+    base = os.path.basename(path).lower()
+    return (
+        base.startswith("ld")
+        or "mold" in base
+        or "lld" in base
+        or "gold" in base
+        or "bfd" in base
+    )
+
+
+def parse_trace(trace_path: str, output_path: str):
+    """Parse one strace log.
+
+    Returns (driver_pid, execs, writes, parents) where execs maps pid to a
+    list of (sequence, verbatim_path, raw_line) for successful execve calls,
+    writes is a list of (sequence, pid) for syscalls that successfully
+    created the output or renamed a file onto it, and parents maps each
+    spawned child pid to its creator pid.
+    """
+    output_bytes = os.fsencode(output_path)
+    execs = {}
+    writes = []
+    parents = {}
+    pending = {}
+    driver_pid = None
+    sequence = 0
+    try:
+        with open(trace_path, "rb") as handle:
+            lines = handle.readlines()
+    except OSError as exc:
+        raise BenchError(f"cannot read trace log {trace_path}: {exc}") from exc
+    for raw in lines:
+        line = raw.rstrip(b"\n")
+        match = _PID_RE.match(line)
+        if not match:
+            continue
+        pid = int(match.group(1))
+        rest = match.group(2)
+        if driver_pid is None:
+            driver_pid = pid
+        if rest.endswith(b"<unfinished ...>"):
+            pending[pid] = line
+            continue
+        if rest.startswith(b"<... ") and b"resumed>" in rest:
+            previous = pending.pop(pid, None)
+            if previous is None:
+                continue
+            head = previous[: previous.rfind(b"<unfinished ...>")]
+            tail = rest[rest.find(b"resumed>") + len(b"resumed>") :]
+            line = head + tail
+        sequence += 1
+        if b"execve(" in line:
+            if not line.rstrip().endswith(b"= 0"):
+                continue
+            path_match = _EXECVE_RE.search(line)
+            if not path_match:
+                continue
+            path = os.fsdecode(c_unescape(path_match.group(1)))
+            execs.setdefault(pid, []).append((sequence, path, line))
+            continue
+        if _SPAWN_RE.search(line):
+            result = _RESULT_RE.search(line)
+            if result:
+                child = int(result.group(1))
+                if child > 0:
+                    parents[child] = pid
+            continue
+        if _RENAME_RE.search(line):
+            if not line.rstrip().endswith(b"= 0"):
+                continue
+            quoted = _QUOTED_RE.findall(line)
+            if len(quoted) >= 2 and c_unescape(quoted[-1]) == output_bytes:
+                writes.append((sequence, pid))
+            continue
+        if _OPEN_RE.search(line):
+            result = _RESULT_RE.search(line)
+            if result is None or int(result.group(1)) < 0:
+                continue
+            quoted = _QUOTED_RE.findall(line)
+            if not quoted or c_unescape(quoted[0]) != output_bytes:
+                continue
+            if (
+                b"O_WRONLY" in line
+                or b"O_RDWR" in line
+                or b"O_CREAT" in line
+                or b"O_TRUNC" in line
+                or b"creat(" in line
+            ):
+                writes.append((sequence, pid))
+            continue
+    return driver_pid, execs, writes, parents
+
+
+def exec_path_before(execs, pid, sequence):
+    path = None
+    for event_sequence, event_path, _raw in execs.get(pid, ()): 
+        if event_sequence <= sequence:
+            path = event_path
+        else:
+            break
+    return path
+
+
+def find_performer(trace_path: str, driver_path: str, output_path: str):
+    driver_pid, execs, writes, parents = parse_trace(trace_path, output_path)
+    if not execs:
+        raise BenchError("no execve events observed for the link")
+    candidates = []
+    for sequence, pid in writes:
+        path = exec_path_before(execs, pid, sequence)
+        if path is None:
+            seen = {pid}
+            current = pid
+            while current in parents:
+                current = parents[current]
+                if current in seen:
+                    break
+                seen.add(current)
+                path = exec_path_before(execs, current, sequence)
+                if path is not None:
+                    break
+        if path is not None and path != driver_path:
+            candidates.append((sequence, path))
+    if candidates:
+        shaped = [c for c in candidates if linker_shaped(os.path.basename(c[1]))]
+        chosen = shaped[-1] if shaped else candidates[-1]
+        return chosen[1]
+    # Fallback: attribute the link to a linker-shaped process whose own
+    # command line referenced the output path (drivers that pass -o
+    # verbatim to the linker).  Refuse ambiguous attributions.
+    needles = [os.fsencode(output_path), os.fsencode(os.path.basename(output_path))]
+    shaped_paths = []
+    for pid, events in execs.items():
+        if pid == driver_pid:
+            continue
+        for sequence, path, raw in events:
+            if path == driver_path:
+                continue
+            if not linker_shaped(os.path.basename(path)):
+                continue
+            if any(needle in raw for needle in needles):
+                shaped_paths.append(path)
+    distinct = set(shaped_paths)
+    if len(distinct) == 1:
+        return distinct.pop()
+    raise BenchError("no linker process producing the output was observed")
+
+
+def classify_version_line(line: str):
+    lowered = line.lower()
+    if "mold" in lowered:
+        return "mold"
+    if "gnu gold" in lowered:
+        return "gold"
+    if "lld" in lowered:
+        return "lld"
+    if "gnu ld" in lowered:
+        return "bfd"
+    return None
+
+
+def run_version_probe(path: str, workload: str, env):
+    try:
+        completed = subprocess.run(
+            [path, "--version"],
+            cwd=workload,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=VERSION_TIMEOUT,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise BenchError(f"cannot probe {path} --version: {exc}") from exc
+    if completed.returncode != 0:
+        raise BenchError(
+            f"{path} --version exited {completed.returncode}: "
+            f"{completed.stderr.decode('utf-8', 'replace').strip()}"
+        )
+    version = first_nonempty_line(completed.stdout.decode("utf-8", "replace"))
+    if not version:
+        raise BenchError(f"{path} --version produced no output")
+    family = classify_version_line(version)
+    if family is None:
+        raise BenchError(f"cannot identify linker family from {version!r}")
+    return version, family
+
+
+def run_probe(output_path: str, manifest, workload: str, env) -> None:
+    probe = manifest["probe"]
+    argv = [
+        output_path if argument == "{output}" else argument
+        for argument in probe["argv"]
+    ]
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=workload,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=PROBE_TIMEOUT,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise BenchError(f"cannot start manifest probe: {exc}") from exc
+    if completed.returncode != probe["expected_returncode"]:
+        raise BenchError(
+            f"manifest probe exited {completed.returncode}, "
+            f"expected {probe['expected_returncode']}"
+        )
+    if completed.stdout != probe["expected_stdout"].encode("utf-8"):
+        raise BenchError("manifest probe stdout mismatch")
+    if completed.stderr != probe["expected_stderr"].encode("utf-8"):
+        raise BenchError("manifest probe stderr mismatch")
+
+
+def check_output(output_path: str) -> None:
+    try:
+        mode = os.lstat(output_path).st_mode
+    except OSError as exc:
+        raise BenchError(f"link did not create {output_path}: {exc}") from exc
+    if not stat.S_ISREG(mode):
+        raise BenchError(f"link output {output_path} is not a regular file")
+
+
+def strace_base(scratch: str, env):
+    strace_path = shutil.which("strace")
+    if not strace_path:
+        raise BenchError("strace is required but was not found")
+    base = [strace_path, "-f", "-s", "32768", "-e", f"trace={TRACE_FILTER}"]
+    probe_log = os.path.join(scratch, "strace-selftest.log")
+    trivial = None
+    for candidate in ("/bin/true", "/usr/bin/true"):
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            trivial = [candidate]
+            break
+    if trivial is None:
+        trivial = [sys.executable, "-c", ""]
+
+    def works(extra):
+        command = [*base, *extra, "-o", probe_log, "--", *trivial]
+        try:
+            completed = subprocess.run(
+                command,
+                env=env,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=30.0,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        if completed.returncode != 0:
+            return False
+        try:
+            with open(probe_log, "rb") as handle:
+                return b"execve(" in handle.read()
+        except OSError:
+            return False
+
+    if works(["--seccomp-bpf"]):
+        log("strace seccomp-bpf acceleration enabled")
+        return [*base, "--seccomp-bpf"]
+    if works([]):
+        log("strace seccomp-bpf unavailable; using plain ptrace tracing")
+        return base
+    raise BenchError("strace could not trace a trivial command")
+
+
+def run_link(manifest, response_path, linker, output_path, trace_path,
+             strace_prefix, workload, env):
+    command = [
+        manifest["driver"],
+        f"-fuse-ld={linker}",
+        *THREAD_ARGS[linker],
+        f"@{response_path}",
+        "-o",
+        output_path,
+    ]
+    full_command = [*strace_prefix, "-o", trace_path, "--", *command]
+    started = time.monotonic_ns()
+    try:
+        completed = subprocess.run(
+            full_command,
+            cwd=workload,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=LINK_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise BenchError(f"{linker} link timed out") from exc
+    except OSError as exc:
+        raise BenchError(f"cannot start linker driver: {exc}") from exc
+    elapsed = time.monotonic_ns() - started
+    if elapsed <= 0:
+        elapsed = 1
+    if completed.returncode != 0:
+        detail = completed.stderr.decode("utf-8", "replace").strip()
+        raise BenchError(
+            f"{linker} link exited {completed.returncode}: {detail}"
+        )
+    performer = find_performer(trace_path, manifest["driver"], output_path)
+    return elapsed, performer
+
+
+def benchmark(workload_arg: str, report_arg: str) -> None:
+    workload = os.path.abspath(workload_arg)
+    report_path = os.path.abspath(report_arg)
+
+    # Remove any existing report before doing any linking work.
+    remove_path(report_path, "report")
+    manifest, warmup, rounds, response_path = load_manifest(workload)
+
+    scratch = tempfile.mkdtemp(prefix="linkbench-")
+    try:
+        tmp_dir = os.path.join(scratch, "tmp")
+        os.mkdir(tmp_dir)
+        env = os.environ.copy()
+        env.update(
+            {
+                "TMPDIR": tmp_dir,
+                "TMP": tmp_dir,
+                "TEMP": tmp_dir,
+                "LC_ALL": "C",
+                "LANG": "C",
+            }
+        )
+        strace_prefix = strace_base(scratch, env)
+
+        schedule = [("warmup", linker) for linker in warmup]
+        for round_order in rounds:
+            schedule.extend(("sample", linker) for linker in round_order)
+
+        invoked_paths = {}
+        versions = {}
+        samples = {linker: [] for linker in LINKERS}
+
+        for sequence, (kind, linker) in enumerate(schedule, start=1):
+            output_path = os.path.join(scratch, f"output-{linker}-{sequence}")
+            trace_path = os.path.join(scratch, f"trace-{sequence}.log")
+            remove_path(output_path, "link output")
+            log(f"{kind} link {sequence}/24: {linker}")
+            elapsed, performer = run_link(
+                manifest,
+                response_path,
+                linker,
+                output_path,
+                trace_path,
+                strace_prefix,
+                workload,
+                env,
+            )
+            established = invoked_paths.get(linker)
+            if established is None:
+                invoked_paths[linker] = performer
+                version, family = run_version_probe(performer, workload, env)
+                if family != linker:
+                    raise BenchError(
+                        f"linker for {linker} at {performer} identifies as "
+                        f"{family}: {version!r}"
+                    )
+                versions[linker] = version
+                log(f"  {linker} performs at {performer} ({version})")
+            elif performer != established:
+                raise BenchError(
+                    f"{linker} link used {performer}, expected {established}"
+                )
+            check_output(output_path)
+            run_probe(output_path, manifest, workload, env)
+            if kind == "sample":
+                samples[linker].append(elapsed)
+                log(f"  {linker} sample {len(samples[linker])}/5: {elapsed} ns")
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    for linker in LINKERS:
+        if len(samples[linker]) != 5:
+            raise BenchError(f"{linker} has {len(samples[linker])} samples")
+
+    medians = {linker: sorted(values)[2] for linker, values in samples.items()}
+    results = [
+        {
+            "linker": linker,
+            "invoked_path": invoked_paths[linker],
+            "version": versions[linker],
+            "effective_threads": EFFECTIVE_THREADS[linker],
+            "samples_ns": samples[linker],
+            "median_ns": medians[linker],
+        }
+        for linker in LINKERS
+    ]
+    ranking = sorted(LINKERS, key=lambda linker: medians[linker])
+    report = {
+        "schema_version": 1,
+        "workload_id": manifest["workload_id"],
+        "results": results,
+        "ranking": ranking,
+    }
+
+    report_dir = os.path.dirname(report_path)
+    if report_dir:
+        os.makedirs(report_dir, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(
+        prefix=".linkbench-report-", dir=report_dir or "."
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(report, indent=2) + "\n")
+        os.replace(temporary, report_path)
+    except BaseException:
+        try:
+            os.unlink(temporary)
+        except OSError:
+            pass
+        raise
+    log(f"wrote report to {report_path}")
+
+
+def main() -> int:
+    if len(sys.argv) != 3:
+        print(
+            "usage: /app/linkbench <workload-directory> <report-json>",
+            file=sys.stderr,
+        )
+        return 2
+    try:
+        benchmark(sys.argv[1], sys.argv[2])
+    except BenchError as exc:
+        log(str(exc))
+        return 1
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        log(f"unexpected failure: {exc}")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
