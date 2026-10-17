@@ -8,6 +8,10 @@ I wanted to know whether an AI agent could carry a bounded engineering task thro
 
 This is an observational study of three engineering episodes from an unfinished private desktop application. The application is not the subject of the study. The subject is the work loop: what the agent was assigned, what it did, what it claimed, what review found, how I intervened, and what the retained evidence finally supports.
 
+## What this demonstrates
+
+This study demonstrates how I examine whether an agent's completion claims are supported by acceptance evidence, separate reported status from verified outcomes, and document human intervention without disclosing the private product under development.
+
 ## What I found
 
 The strongest signal was not whether an agent wrote working code. All three episodes produced useful implementation work. The stronger discriminator was whether the run could establish that the intended behavior worked across the real boundary under review.

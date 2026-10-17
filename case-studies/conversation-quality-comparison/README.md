@@ -4,6 +4,10 @@ This case study compares three lower-tier model routes on one synthetic professi
 
 **All people, organizations, conversations, identifiers, contracts, service records, and events in the context are synthetic. No client or real member data appears in this package.**
 
+## What this demonstrates
+
+This project demonstrates how I check professional AI-assisted analysis against source records, identify unsupported claims and evaluator errors, and assess how much human verification remains necessary before the work can be relied upon.
+
 ## Research question
 
 Can lower-tier models produce a defensible clinical-quality and contract review of 100 synthetic AI-user conversations, and where does human verification remain necessary?

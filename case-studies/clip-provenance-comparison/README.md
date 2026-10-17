@@ -4,6 +4,10 @@ Three frontier-model workflows received the same bounded assignment: match 200 t
 
 This is an evaluation of end-to-end technical work, not a chat-answer comparison. Each workflow had to inspect media, design and implement a pipeline, establish confidence rules, validate the method, and leave an auditable result.
 
+## What this demonstrates
+
+This project demonstrates how I compare independently developed AI workflows for accuracy, uncertainty handling, coverage, and remaining review work while preserving the differences in how each workflow reached its result.
+
 ## What was controlled
 
 - Each trial ran in a separate OpenCode 2.0.29 instance.

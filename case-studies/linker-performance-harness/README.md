@@ -4,6 +4,10 @@ A performance harness can print precise timings while measuring the wrong execut
 
 I designed the synthetic workloads, authenticated controlled protocol, reference solution, and five-test verifier. The central question is not whether the program produces a ranking. It is whether the evidence behind that ranking can be trusted.
 
+## What this demonstrates
+
+This project demonstrates how I detect misleading measurements, verify the evidence behind a performance claim, and distinguish a plausible-looking benchmark report from a run that followed the required protocol.
+
 ## Balanced result
 
 | Recorded model route | Successful trials | Observed pass rate | Recorded cost | Cost per success |

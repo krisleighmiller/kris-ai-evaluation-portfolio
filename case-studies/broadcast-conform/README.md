@@ -4,6 +4,10 @@ A video can play normally and still be wrong. This benchmark asks an agent to di
 
 I designed the task, synthetic footage, hidden truth, reference solution, and 15-test verifier. The verifier decodes the submitted `master.mp4`; it does not accept tags or an agent's completion claim as proof of conformance.
 
+## What this demonstrates
+
+This project demonstrates how I turn detailed deliverable requirements into objective acceptance checks, validate the evaluation with Oracle and task-quality runs, and trace failed results to specific defects in the submitted artifact.
+
 ## Result at a glance
 
 | Recorded model route | Successful trials | Observed pass rate | Recorded cost | Cost per success |
