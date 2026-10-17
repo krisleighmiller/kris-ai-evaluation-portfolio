@@ -62,7 +62,7 @@ This repository does not distribute Harbor, OpenCode, API credentials, provider 
 - [Model, provider, cost, and runtime notes](docs/model-and-provider-notes.md)
 - [Reproducing the evaluations](docs/reproducing-the-evaluations.md)
 
-## Publication status
 
-The writing in this repository is a working draft. The evidence packages are being copied from a private source archive, sanitized, checked against their original records, and added case by case. A page describes planned evidence only when that evidence has already been located and classified; it does not mean the public package has passed its final release audit.
+
+
 
