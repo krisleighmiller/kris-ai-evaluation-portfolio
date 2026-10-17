@@ -4,9 +4,9 @@ You bring the workflow and the question. I design a bounded evaluation to invest
 
 The purpose is to produce evidence for a specific decision: what worked under the tested conditions, what failed, what still required human verification, and what the experiment did not establish. An engagement begins only after we agree in writing on the question, evidence standard, deliverables, and exclusions.
 
-## What the client must supply
+## What you must supply
 
-The starting point is a sanitized business procedure or workflow. The client does not need to design the evaluation or arrive with a finished benchmark, but must provide enough information to make the task and its acceptance conditions testable:
+The starting point is a sanitized business procedure or workflow. You do not need to design the evaluation or arrive with a finished benchmark, but you must provide enough information to make the task and its acceptance conditions testable:
 
 - What starts the workflow and what information is available at that point.
 - What output, decision, or action the workflow requires.
@@ -32,9 +32,9 @@ Other questions can be considered through written scoping. The final question mu
 
 ## How domain ambiguities are resolved
 
-I provide evaluation expertise, not automatic expertise in the client's industry. Domain-specific correctness is established from authoritative written requirements and the client's designated subject-matter expert.
+I provide evaluation expertise, not automatic expertise in your industry. Domain-specific correctness is established from authoritative written requirements and your designated subject-matter expert.
 
-Ambiguities, conflicting rules, and missing acceptance criteria are documented as written questions. The client's expert resolves the domain question, and the resulting decision is recorded before it is used in test design or scoring. When an ambiguity cannot be resolved, I will identify it as a limitation, narrow the affected claim, exclude that condition from scoring, or recommend that the engagement not proceed. An AI model's answer is not treated as authority for resolving the client's own business rules.
+Ambiguities, conflicting rules, and missing acceptance criteria are documented as written questions. Your expert resolves the domain question, and the resulting decision is recorded before it is used in test design or scoring. When an ambiguity cannot be resolved, I will identify it as a limitation, narrow the affected claim, exclude that condition from scoring, or recommend that the engagement not proceed. An AI model's answer is not treated as authority for resolving your business rules.
 
 ## What the written deliverable includes
 
@@ -66,10 +66,10 @@ I design evaluations, conduct controlled tests, and report evidence. I do not ta
 The service does not include:
 
 - Deploying a model or workflow into production.
-- Integrating the workflow with the client's applications, data, accounts, or infrastructure.
-- Implementing the client's production process or making operational decisions on the client's behalf.
+- Integrating the workflow with your applications, data, accounts, or infrastructure.
+- Implementing your production process or making operational decisions on your behalf.
 - Ongoing monitoring, incident response, technical support, or model administration.
 - Maintaining a benchmark or integration after the agreed handoff.
 - Owning production performance, business outcomes, regulatory decisions, or future model behavior.
 
-The client retains responsibility for production decisions and for obtaining any implementation, security, legal, compliance, or domain-specialist review the intended use requires. The deliverable is an evidence-backed assessment of defined trials, not a guarantee of production performance.
+You retain responsibility for production decisions and for obtaining any implementation, security, legal, compliance, or domain-specialist review the intended use requires. The deliverable is an evidence-backed assessment of defined trials, not a guarantee of production performance.
