@@ -43,3 +43,25 @@ Use [`../task/CHECKSUMS.sha256`](../task/CHECKSUMS.sha256) as the identity of th
 ## Validation is not performance data
 
 The Oracle passed 15/15 tests. The completed task-quality check passed 11/11 criteria. Those records establish that the reference solution can satisfy the verifier and that a separate check found the task design sound; they are not added to the 20-trial model denominator.
+
+## Closing assessment
+
+### What worked under the tested conditions
+
+Fourteen of the 20 primary trials produced deliverables that passed all 15 verifier checks. Astra and Qwen passed five of five trials, and Kimi passed four of five. The Oracle and completed task-quality check also supported the evaluation design under the published task conditions.
+
+### What failed
+
+All five DeepSeek-route deliverables failed decoded-signal, edit, and timing checks despite passing several surface-level requirements. One Kimi deliverable failed A/V sync and beep spacing. These failures show that file presence, plausible metadata, and basic stream properties were not sufficient evidence of conformance.
+
+### What required human verification
+
+Human review was required to define the hidden truth, decide which decoded properties represented acceptance, interpret failure patterns, keep validation runs out of model pass rates, and correct the task-checksum interpretation. The automated verifier established whether a submission met the encoded requirements; it did not determine how broadly the findings should be applied.
+
+### What remains untested
+
+The study does not cover other broadcast specifications, source problems, program lengths, model revisions, provider routes, or repeated batches beyond five trials per route. It also does not establish how the same workflows would perform after model, application, dependency, or hardware changes.
+
+### What these findings could inform
+
+The findings could inform acceptance-test design for generated media, selection of AI-assisted conform workflows, budgeting for failed attempts, and decisions about which deliverable properties require decoded artifact checks before human sign-off.

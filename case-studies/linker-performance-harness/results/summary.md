@@ -40,3 +40,25 @@ The sanitized public package has its own per-file checksum manifest because one 
 The private working report said no separate Oracle execution existed. A contemporaneous record establishes a successful development Oracle run; its temporary raw directory was not retained, so the public record is explicitly labeled reconstructed.
 
 The working report also assigned the invocation-0 missing-probe failure to the five balanced DeepSeek trials. The underlying verifier reports show that failure belongs to the earlier exploratory DeepSeek run. The balanced DeepSeek failures are corrected in the [failure analysis](failure-analysis.md).
+
+## Closing assessment
+
+### What worked under the tested conditions
+
+Five of the 15 balanced submissions passed the complete verifier: three Astra trials and two Kimi trials. The authenticated protocol distinguished those submissions from programs that executed and produced plausible reports without preserving trustworthy measurement evidence.
+
+### What failed
+
+Ten balanced submissions failed the authenticated controlled protocol, and one of those also failed the hidden native workload. Both exploratory submissions failed the controlled protocol. The failures involved different mechanisms, so a shared failed test did not establish one shared implementation error.
+
+### What required human verification
+
+Human review was required to inspect the trace-supported failure mechanisms, separate balanced and exploratory observations, correct the attribution of the missing-probe failure, and describe the limits of the reconstructed Oracle record. The verifier authenticated the protocol; human analysis determined what each result supported and what it did not.
+
+### What remains untested
+
+The study does not cover other operating systems, toolchains, linker versions, workload families, or repeated batches beyond five balanced trials per route. It evaluates whether an agent built a trustworthy harness for this task; it does not establish a general performance ranking among the linkers themselves.
+
+### What these findings could inform
+
+The findings could inform acceptance criteria for performance tooling, audits of claimed speedups, agent selection for systems-measurement work, and review procedures that require authenticated execution evidence rather than relying on labels or polished benchmark reports.

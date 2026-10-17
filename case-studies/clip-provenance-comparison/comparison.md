@@ -87,3 +87,25 @@ Kris designed the shared task and deterministic corpus, ran the isolated OpenCod
 ## Reproduction
 
 Use [context/README.md](context/README.md) to retrieve and verify the exact media. Run the [shared prompt](prompt.md) in a fresh isolated directory, preserve the resulting work products, and keep the [answer key](answer-key/README.md) unavailable until the run is complete. Then use [verification/README.md](verification/README.md) to score and compare the new result.
+
+## Closing assessment
+
+### What worked under the tested conditions
+
+All three workflows produced useful matching systems from the same brief and media. DeepSeek proposed the correct source and time for all 160 genuine clips, while Astra explicitly rejected all 40 foreign clips and maintained a clean accepted set. The shared scorer made the different confidence schemes comparable without replacing their native labels.
+
+### What failed
+
+No workflow dominated every measure. DeepSeek left 18 foreign clips in its uncertain queue, Astra had one uncertain timing estimate outside tolerance, and Kimi's unfinished recovery work reduced foreign rejection and introduced two accepted foreign clips in its later checkpoint. Greater recovery activity did not automatically produce a stronger deliverable.
+
+### What required human verification
+
+Human verification was required to select the appropriate saved checkpoints, adapt the three output schemas to one scorer, inspect row-level disagreements, distinguish foreign rejection from uncertain matching, and interpret the review burden behind each confidence label. Representative panels supported review but did not replace generator-derived truth.
+
+### What remains untested
+
+The comparison does not cover unseen media collections, every possible transformation, repeated independent runs, additional model routes, or later versions of the models and OpenCode. The confidence labels are not calibrated probabilities, and the timing rule does not establish frame-accurate forensic certainty.
+
+### What these findings could inform
+
+The findings could inform model and workflow selection for media-provenance work, confidence-threshold design, staffing for manual review queues, and evaluation plans that measure accepted accuracy, coverage, foreign rejection, and unresolved work separately.

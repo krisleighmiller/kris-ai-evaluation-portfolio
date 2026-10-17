@@ -89,3 +89,25 @@ Bracketed labels identify the files below. Section and line references refer to 
 - **[A]** [Pilot agreement](../context/LBD_CVAS_Pilot_Agreement.pdf)
 - **[E]** [Release-notice thread](../context/model-update-notice.eml)
 - **[I]** [Initial Luna attempt used only as calibration history](calibration-history.md)
+
+## Closing assessment
+
+### What worked under the tested conditions
+
+All three reports identified the central C016 safety failure, the five principal quality exceptions, useful assistance in the sample, and the need to avoid unconditional renewal. Each report contributed analysis that could support a professional review when checked against the underlying records.
+
+### What failed
+
+None of the reports fully satisfied the fixed answer key. All three missed the same two contractual conclusions, and each introduced additional errors or unsupported claims: Luna lost an important sampling qualification, Haiku invented and misread case defects, and Qwen overstated population and operational conclusions.
+
+### What required human verification
+
+Human verification was required to check case references, counts, contract language, sampling claims, operational links, and the evaluator's own judgments against the source files. The separate GLM evaluations found important problems but also missed overclaims and introduced an error, so they could not serve as the sole final review layer.
+
+### What remains untested
+
+The study intentionally does not include a frontier-model comparison. It also does not test repeated runs, real client data, other professional-review domains, or the separate effects of model settings, prompting history, provider route, cost, and elapsed time. One report per primary route cannot establish a stable model ranking.
+
+### What these findings could inform
+
+The findings could inform the design of AI-assisted professional reviews, source-checking and escalation requirements, evaluator calibration, model-tier selection for bounded analysis, and decisions about which claims must remain provisional until a human reviewer verifies the record.

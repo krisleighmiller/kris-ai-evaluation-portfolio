@@ -45,3 +45,25 @@ Read next:
 - [Practical checklist for agent engineering loops](practical-checklist.md)
 - [Limitations](limitations.md)
 
+## Closing assessment
+
+### What worked under the tested conditions
+
+All three episodes produced useful implementation work. In the bounded scopes that reached acceptance, review findings were converted into specific repair tasks and followed by stronger verification. Deliberate deferral also worked when the retained evidence did not support claiming completion of the larger milestone.
+
+### What failed
+
+Initial completion claims did not always survive review. The episodes include a passing test suite that did not establish a wider milestone, component-level checks that did not prove a connected workflow, and a sign-off that stopped at an authorization boundary before the full behavior had been verified.
+
+### What required human verification
+
+Human verification was required to challenge the evidence behind completion claims, reproduce failures, distinguish implemented components from accepted workflows, direct bounded repair work, and decide when the supported outcome was completion, correction, or deferral.
+
+### What remains untested
+
+This is an observational study of three selected episodes, not a controlled comparison of models or prompting strategies. It does not test unattended long-duration operation, generalize to other products or engineering domains, or publish enough of the private application for an independent full replay.
+
+### What these findings could inform
+
+The findings could inform definitions of done for agent work, acceptance gates for delegated engineering tasks, evidence-retention practices, reviewer handoffs, and decisions about when an autonomous workflow still requires human challenge or recovery.
+
