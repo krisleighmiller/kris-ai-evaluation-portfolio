@@ -1,4 +1,20 @@
-# AI Evaluation and Benchmark Engineering Portfolio
+# Independent AI Evaluation for Specific Business Tasks
+
+I design controlled experiments to investigate how selected AI models perform on your task: what they get right, how they fail, and where human verification remains necessary. My work includes alternative and lower-cost models, not only frontier systems.
+
+You receive an evidence-backed report of tested capabilities, failure patterns, costs, and limitations—not a guarantee of production performance.
+
+## What this portfolio demonstrates
+
+| Project | Consulting capability it demonstrates |
+| --- | --- |
+| [AI Conversation Review](case-studies/conversation-quality-comparison/) | Checking professional analysis against source records and assessing the reliability of AI-assisted review. |
+| [Broadcast Conform](case-studies/broadcast-conform/) | Turning detailed deliverable requirements into objective acceptance checks. |
+| [Clip Provenance](case-studies/clip-provenance-comparison/) | Comparing accuracy, uncertainty handling, coverage, and remaining review work. |
+| [Linker Performance Harness](case-studies/linker-performance-harness/) | Detecting misleading measurements and verifying the evidence behind a performance claim. |
+| [Agent Engineering Loops](case-studies/agent-engineering-loops/) | Examining whether completion claims are supported by actual acceptance evidence. |
+
+## How I work
 
 I turn ambiguous claims about model capability into evidence that can be checked: explicit tasks, controlled runs, objective or structured evaluation, failure analysis, and conclusions that stay inside the limits of the data.
 
