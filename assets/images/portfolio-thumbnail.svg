@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Kris Leigh Miller, Applied AI Quality and Reliability</title>
+  <desc id="desc">Warm paper background with dark ink typography, a deep teal accent, and an abstract verification grid.</desc>
+  <rect width="1200" height="630" fill="#faf9f6"/>
+  <rect x="0" y="0" width="18" height="630" fill="#0d5c58"/>
+
+  <g opacity="0.72" stroke="#d7d3c8" fill="none">
+    <path d="M870 78H1125V333H870Z"/>
+    <path d="M870 129H1125M870 180H1125M870 231H1125M870 282H1125"/>
+    <path d="M921 78V333M972 78V333M1023 78V333M1074 78V333"/>
+  </g>
+  <g fill="#0d5c58">
+    <rect x="917" y="125" width="9" height="9" rx="2"/>
+    <rect x="968" y="176" width="9" height="9" rx="2"/>
+    <rect x="1019" y="227" width="9" height="9" rx="2"/>
+    <rect x="1070" y="278" width="9" height="9" rx="2"/>
+    <path d="M879 409l25 25 48-54" fill="none" stroke="#0d5c58" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <text x="84" y="92" fill="#0d5c58" font-family="'JetBrains Mono', Menlo, monospace" font-size="22" letter-spacing="3">KRIS LEIGH MILLER</text>
+  <text x="84" y="218" fill="#211f1a" font-family="Georgia, 'Times New Roman', serif" font-size="78" font-weight="600">APPLIED AI</text>
+  <text x="84" y="308" fill="#211f1a" font-family="Georgia, 'Times New Roman', serif" font-size="78" font-weight="600">QUALITY &amp;</text>
+  <text x="84" y="398" fill="#211f1a" font-family="Georgia, 'Times New Roman', serif" font-size="78" font-weight="600">RELIABILITY</text>
+
+  <line x1="84" y1="470" x2="735" y2="470" stroke="#e4e1d8" stroke-width="2"/>
+  <text x="84" y="520" fill="#6b6860" font-family="Arial, Helvetica, sans-serif" font-size="28">Evidence before assurance.</text>
+  <text x="84" y="565" fill="#6b6860" font-family="Arial, Helvetica, sans-serif" font-size="22">Agent evaluation · Systems QA · Technical research</text>
+</svg>

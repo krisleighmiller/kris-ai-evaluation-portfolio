@@ -3,28 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kris Leigh Miller</title>
-  <meta name="description" content="Independent AI evaluation engineer. Controlled experiments that show how AI models perform on your specific task: what they get right, how they fail, and where human verification remains necessary.">
-  <link rel="canonical" href="https://krisleighmiller.github.io/kris-ai-evaluation-portfolio/">
-  <meta property="og:title" content="Kris Leigh Miller — Independent AI Evaluation Engineer">
-  <meta property="og:description" content="Independent AI evaluation engineer. Controlled experiments that show how AI models perform on your specific task: what they get right, how they fail, and where human verification remains necessary.">
+  <title>Kris Leigh Miller | Applied AI Quality &amp; Reliability</title>
+  <meta name="description" content="Applied AI quality, agent evaluation, systems QA, technical research, and human-supervised workflow design by Kris Leigh Miller.">
+  <link rel="canonical" href="https://krisleighmiller.com/">
+  <meta property="og:title" content="Kris Leigh Miller | Applied AI Quality &amp; Reliability">
+  <meta property="og:description" content="I investigate whether AI-assisted systems actually do the work they claim to do.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://krisleighmiller.github.io/kris-ai-evaluation-portfolio/">
+  <meta property="og:url" content="https://krisleighmiller.com/">
+  <meta property="og:image" content="https://krisleighmiller.com/assets/images/portfolio-thumbnail.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Kris Leigh Miller — Applied AI Quality and Reliability">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://krisleighmiller.com/assets/images/portfolio-thumbnail.png">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230d5c58'/%3E%3Cpath d='M4 8.2l2.6 2.6L12 5.4' stroke='%23faf9f6' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://api.fontshare.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://api.fontshare.com/v2/css?f[]=boska@400,500,600&f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=boska@400,500,600&amp;f[]=satoshi@400,500,700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Person",
     "name": "Kris Leigh Miller",
-    "jobTitle": "Independent AI Evaluation Engineer",
-    "url": "https://krisleighmiller.github.io/kris-ai-evaluation-portfolio/",
-    "sameAs": "https://github.com/krisleighmiller"
+    "jobTitle": "Applied AI Quality & Reliability Specialist",
+    "url": "https://krisleighmiller.com/",
+    "sameAs": [
+      "https://www.linkedin.com/in/krisleighmiller/",
+      "https://github.com/krisleighmiller",
+      "https://medium.com/@krisleighmiller"
+    ],
+    "knowsAbout": [
+      "AI quality assurance",
+      "agent evaluation",
+      "benchmark design",
+      "acceptance testing",
+      "systems analysis",
+      "technical research",
+      "human-in-the-loop systems"
+    ]
   }
   </script>
 </head>
@@ -32,100 +51,160 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="container">
     <header class="site-header">
-      <p class="site-name">Kris Leigh Miller</p>
-      <p class="site-role">Independent AI Evaluation Engineer</p>
+      <a class="site-brand" href="/" aria-label="Kris Leigh Miller, home">
+        <span class="site-name">Kris Leigh Miller</span>
+        <span class="site-role">Applied AI Quality &amp; Reliability</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="#work">Work</a>
+        <a href="#capabilities">Capabilities</a>
+        <a href="#writing">Writing</a>
+        <a href="about.html">About</a>
+        <a href="#contact">Contact</a>
+      </nav>
     </header>
 
     <main id="main">
       <section class="hero">
-<p class="eyebrow">Evidence, not assurances</p>
+        <p class="eyebrow">Evidence before assurance</p>
+        <h1>I investigate whether AI-assisted systems actually do the work they claim to do.</h1>
+        <p class="lede">I design tests, inspect connected workflows, direct and verify agent-assisted implementation, and turn technical evidence into decisions about what can be trusted, what needs correction, and what must remain under human review.</p>
+        <div class="actions" role="group" aria-label="Featured links">
+          <a class="button" href="#work">View selected work</a>
+          <a class="text-link" href="#contact">Contact me <span aria-hidden="true">→</span></a>
+        </div>
+      </section>
 
-<h1>Controlled experiments that show how AI models perform on your task</h1>
-<p class="lede">I design bounded evaluations to investigate what selected models get right on your workflow, how they fail, and where human verification remains necessary — including alternative and lower-cost models, not only frontier systems.</p>
+      <section id="capabilities" aria-labelledby="capabilities-heading">
+        <p class="section-label">Capabilities</p>
+        <h2 id="capabilities-heading">Quality is an evidence problem</h2>
+        <p class="section-intro">My work begins with the acceptance boundary: what would need to be true before the result could be used, delivered, or trusted?</p>
+        <div class="card-grid capability-grid">
+          <article class="card">
+            <p class="card-index">01</p>
+            <h3>AI evaluation and benchmark design</h3>
+            <p>Controlled model and agent evaluations using realistic tasks, explicit acceptance criteria, machine or judgment-based oracles, isolated trials, and documented limitations.</p>
+          </article>
+          <article class="card">
+            <p class="card-index">02</p>
+            <h3>Systems QA and acceptance</h3>
+            <p>Testing whether components produce a usable connected workflow, investigating false completion and integration failures, and defining the evidence required before work is accepted.</p>
+          </article>
+          <article class="card">
+            <p class="card-index">03</p>
+            <h3>Technical investigation and research</h3>
+            <p>Inspecting source implementations, comparing tools and architectures, tracing provenance, testing claims, and translating findings into practical decisions.</p>
+          </article>
+          <article class="card">
+            <p class="card-index">04</p>
+            <h3>Human-supervised workflow design</h3>
+            <p>Designing AI-assisted workflows, approval boundaries, recovery behavior, and knowledge systems that preserve human authority and durable records.</p>
+          </article>
+        </div>
+      </section>
 
-<p class="note">You receive an evidence-backed report of tested capabilities, failure patterns, costs, and limitations — not a guarantee of production performance.</p>
-</section>
+      <section id="work" aria-labelledby="work-heading">
+        <p class="section-label">Selected work</p>
+        <h2 id="work-heading">Inspect the work, not the adjective</h2>
+        <div class="project-list">
+          <article class="project-card featured-project">
+            <div>
+              <p class="project-type">Public evaluation portfolio</p>
+              <h3><a href="https://github.com/krisleighmiller/kris-ai-evaluation-portfolio">AI Evaluation and Benchmark Engineering</a></h3>
+              <p>Five inspectable studies covering benchmark design, controlled model comparisons, professional-report review, agent reliability, verification methods, and bounded claim-making.</p>
+            </div>
+            <p class="project-status">Public repository · Runnable or inspectable evidence</p>
+          </article>
 
-<h2>How an engagement works</h2>
-<p>You bring the workflow and the question. I design a bounded evaluation to investigate it. An engagement begins only after we agree in writing on the question, evidence standard, deliverables, and exclusions.</p>
-<ol>
-<li><p><strong>Scoping in writing.</strong> You supply a sanitized description of the workflow — what starts it, what it must produce, and what makes a result acceptable, unacceptable, or uncertain — together with the decision you need to make.</p>
-</li>
-<li><p><strong>Test design.</strong> I turn your requirements into representative tasks, acceptance checks, and trial conditions. Domain questions are resolved by your subject-matter expert; a model&#39;s answer is never treated as authority for your business rules.</p>
-</li>
-<li><p><strong>Controlled trials.</strong> Repeated runs of the selected models, with usage, cost, and elapsed time recorded where available and failures preserved as evidence.</p>
-</li>
-<li><p><strong>Findings and handoff.</strong> A written report covering what was tested, what failed and how, what still required human verification, what it cost, and what remains uncertain. A reusable benchmark your team can rerun is a separate, commissioned deliverable.</p>
-</li>
-</ol>
-<p>See the full <a href="https://github.com/krisleighmiller/kris-ai-evaluation-portfolio/blob/main/SERVICES.md">services and client boundaries</a> for required inputs, written communication terms, deliverables, and exclusions.</p>
-<h2>Questions an evaluation can answer</h2>
-<ul>
-<li>How do selected models perform on this task?</li>
-<li>What mistakes do they make, and how consequential are those mistakes?</li>
-<li>Which outputs or decisions still require human checking?</li>
-<li>Do specified prompt, context, or input changes improve the observed results?</li>
-<li>What tradeoffs appear among accuracy, coverage, uncertainty, cost, and elapsed time?</li>
-<li>Can the evaluation become a repeatable benchmark for future trials?</li>
-</ul>
-<h2>Proof of work</h2>
-<p>The methods and capabilities described here are supported by a published, inspectable portfolio: <a href="https://github.com/krisleighmiller/kris-ai-evaluation-portfolio">four completed evaluations and one observational study</a>. The completed evaluations publish their inputs or runnable tasks, recorded outputs, verification method, and bounded findings. The observational study publishes a product-abstracted evidence narrative because the underlying application remains private.</p>
-<div class="table-scroll">
-<table class="evidence">
-<thead>
-<tr>
-<th>Evaluation</th>
-<th>Capability demonstrated</th>
-<th>Recorded result</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><a href="https://github.com/krisleighmiller/kris-ai-evaluation-portfolio/tree/main/case-studies/broadcast-conform">Broadcast Conform</a></td>
-<td>Turning detailed deliverable requirements into objective acceptance checks</td>
-<td>20 trials; routes scored 0/5 to 5/5; failures isolated by decoded-signal checks</td>
-</tr>
-<tr>
-<td><a href="https://github.com/krisleighmiller/kris-ai-evaluation-portfolio/tree/main/case-studies/linker-performance-harness">Linker Performance Harness</a></td>
-<td>Detecting misleading measurements and verifying the evidence behind a performance claim</td>
-<td>15 balanced trials; every failed submission broke the controlled protocol</td>
-</tr>
-<tr>
-<td><a href="https://github.com/krisleighmiller/kris-ai-evaluation-portfolio/tree/main/case-studies/clip-provenance-comparison">Clip Provenance Comparison</a></td>
-<td>Comparing accuracy, uncertainty handling, coverage, and remaining review work</td>
-<td>Three isolated workflows produced materially different pipelines against withheld ground truth</td>
-</tr>
-<tr>
-<td><a href="https://github.com/krisleighmiller/kris-ai-evaluation-portfolio/tree/main/case-studies/conversation-quality-comparison">AI Conversation Review</a></td>
-<td>Assessing the reliability of AI-assisted professional review</td>
-<td>Three model reports checked against a fixed answer key and reviewed for evaluator error</td>
-</tr>
-<tr>
-<td><a href="https://github.com/krisleighmiller/kris-ai-evaluation-portfolio/tree/main/case-studies/agent-engineering-loops">Agent Engineering Loops</a></td>
-<td>Examining whether completion claims are supported by actual acceptance evidence</td>
-<td>Three reconstructed episodes, with agent claims separated from verified outcomes</td>
-</tr>
-</tbody></table>
+          <article class="project-card">
+            <div>
+              <p class="project-type">Private application · Public case description</p>
+              <h3><a href="work/studio.html">Studio</a></h3>
+              <p>An agent-assisted desktop media-production application used to investigate product direction, acceptance design, agent supervision, integration testing, and the difference between passing components and a usable connected workflow.</p>
+            </div>
+            <p class="project-status">Under development · Source remains private</p>
+          </article>
 
-</div>
+          <article class="project-card">
+            <div>
+              <p class="project-type">Operational personal system</p>
+              <h3><a href="work/continuity.html">Cross-Agent Continuity and Knowledge System</a></h3>
+              <p>A working system combining searchable conversation archives, local semantic retrieval, portable Markdown records, mobile capture, synchronization, scheduled reporting, and explicit information-governance rules.</p>
+            </div>
+            <p class="project-status">In daily use · Multi-user product work is separate</p>
+          </article>
+        </div>
+      </section>
 
-<h2>How to read the results</h2>
-<blockquote>
-<p><span class="quote-label">A note on evidence</span></p>
-<p>A passing artifact is not automatically a good process, and a polished report is not automatically correct. Small trial sets support findings about these tasks and runs; they do not establish universal model rankings.</p>
-</blockquote>
-<h2>Contact</h2>
-<p>To discuss an evaluation, email a brief, non-confidential description of your workflow and the decision you need to make. All project communication is written — email or another agreed channel — so requirements, questions, decisions, and scope changes stay documented throughout.</p>
-<p><a class="contact-email" href="mailto:kris@krisleighmiller.com">kris@krisleighmiller.com</a></p>
+      <section id="writing" aria-labelledby="writing-heading">
+        <p class="section-label">Selected writing</p>
+        <h2 id="writing-heading">Technical evidence, explained plainly</h2>
+        <div class="writing-list">
+          <article>
+            <h3><a href="https://medium.com/@krisleighmiller/the-ai-finished-the-work-wasnt-done-29cced48a891">The AI Finished. The Work Wasn’t Done.</a></h3>
+            <p>Why completed output, passing checks, cost, elapsed time, and remaining human work belong in the same evaluation.</p>
+            <p class="publication">Medium · AI evaluation and workflow reliability</p>
+          </article>
+          <article>
+            <h3><a href="https://medium.com/@krisleighmiller/your-autonomous-agent-still-needs-a-manager-2143a91753f1">Your Autonomous Agent Still Needs a Manager</a></h3>
+            <p>Why successful completion does not prove that an autonomous agent worked independently, and why scope drift, supervision, and unnecessary implementation belong in the result.</p>
+            <p class="publication">Medium · Agent reliability and supervision</p>
+          </article>
+          <article>
+            <h3><a href="https://medium.com/@krisleighmiller/the-administrative-work-between-doing-the-work-e32c253b9f80">The Administrative Work Between Doing the Work</a></h3>
+            <p>How conversation search, durable notes, synchronization, mobile capture, and scheduled reporting became one continuity system.</p>
+            <p class="publication">Medium · Knowledge systems and workflow design</p>
+          </article>
+          <article>
+            <h3><a href="https://adifferentkindofmind.substack.com/p/the-people-were-the-problem">The People Were the Problem</a></h3>
+            <p>An evidence-led account of AI as an accessibility layer, and why a technically useful system still has to fit the person using it.</p>
+            <p class="publication">Substack · AI, accessibility, and human agency</p>
+          </article>
+        </div>
+      </section>
 
+      <section id="ways-to-work" aria-labelledby="ways-heading">
+        <p class="section-label">Ways to work with me</p>
+        <h2 id="ways-heading">Roles and bounded engagements</h2>
+        <div class="card-grid two-column">
+          <article class="card">
+            <h3>Employment and contract roles</h3>
+            <p>I am open to remote full-time and contract work in AI quality, agent evaluation, systems QA, technical research, and technical writing.</p>
+            <p><a href="https://www.linkedin.com/in/krisleighmiller/">View my LinkedIn profile <span aria-hidden="true">→</span></a></p>
+          </article>
+          <article class="card">
+            <h3>Bounded evaluation engagements</h3>
+            <p>For defined consulting projects, I evaluate sanitized AI-assisted workflows and provide written findings covering tested capabilities, failure patterns, costs, limitations, and remaining human-review work.</p>
+            <p><a href="evaluation-services.html">Read the service boundaries <span aria-hidden="true">→</span></a></p>
+          </article>
+        </div>
+      </section>
+
+
+      <section id="contact" aria-labelledby="contact-heading" class="contact-section">
+        <p class="section-label">Contact</p>
+        <h2 id="contact-heading">Start with the role, problem, or question</h2>
+        <p>For employment, contract work, technical research, writing, or a bounded evaluation project, email a brief, non-confidential description of what you need.</p>
+        <p><a class="contact-email" href="mailto:kris@krisleighmiller.com">kris@krisleighmiller.com</a></p>
+        <div class="contact-links">
+          <a href="https://www.linkedin.com/in/krisleighmiller/">LinkedIn</a>
+          <a href="https://github.com/krisleighmiller">GitHub</a>
+          <a href="https://medium.com/@krisleighmiller">Medium</a>
+          <a href="https://adifferentkindofmind.substack.com/">Substack</a>
+        </div>
+      </section>
     </main>
 
     <footer class="site-footer">
-      <p>&copy; 2026 Kris Leigh Miller &middot; Independent AI Evaluation Engineer</p>
+      <p>&copy; 2026 Kris Leigh Miller · Applied AI Quality &amp; Reliability</p>
       <p class="footer-links">
-        <a href="mailto:kris@krisleighmiller.com">kris@krisleighmiller.com</a>
-        <span aria-hidden="true">&middot;</span>
-        <a href="https://github.com/krisleighmiller/kris-ai-evaluation-portfolio" rel="noopener">Evidence portfolio on GitHub</a>
+        <a href="mailto:kris@krisleighmiller.com">Email</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://www.linkedin.com/in/krisleighmiller/">LinkedIn</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/krisleighmiller/kris-ai-evaluation-portfolio">Evidence portfolio</a>
       </p>
     </footer>
   </div>
+</body>
 </html>
