@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cross-Agent Continuity | Miller Applied Systems</title>
-  <meta name="description" content="A working cross-agent knowledge system and a separate investigation into the reliability of autonomous coding workflows.">
+  <title>Continuity Assistant and Knowledge Systems | Miller Applied Systems</title>
+  <meta name="description" content="Cross-agent knowledge systems, Hermes profile confinement, and evaluation of whether autonomous coding agents follow explicit engineering requirements.">
   <link rel="canonical" href="https://millerappliedsystems.com/work/continuity.html">
-  <meta property="og:title" content="Cross-Agent Continuity | Miller Applied Systems">
-  <meta property="og:description" content="A working cross-agent knowledge system and a separate investigation into the reliability of autonomous coding workflows.">
+  <meta property="og:title" content="Continuity Assistant and Knowledge Systems | Miller Applied Systems">
+  <meta property="og:description" content="Cross-agent knowledge systems, Hermes profile confinement, and evaluation of whether autonomous coding agents follow explicit engineering requirements.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://millerappliedsystems.com/work/continuity.html">
   <meta property="og:image" content="https://millerappliedsystems.com/assets/images/miller-applied-systems.png">
@@ -28,13 +28,13 @@
 <body><a class="skip-link" href="#main">Skip to content</a><div class="container"><header class="site-header"><a class="site-brand" href="../index.html" aria-label="Miller Applied Systems, home"><span class="site-name">Miller Applied Systems</span><span class="site-role">Software development · AI evaluation</span></a><nav class="site-nav" aria-label="Primary navigation"><a href="../index.html#work">Work</a><a href="../index.html#capabilities">Capabilities</a><a href="../index.html#writing">Writing</a><a href="../about.html">About</a><a href="../index.html#contact">Contact</a></nav></header><main id="main" class="page-shell prose">
       <p class="breadcrumbs"><a href="../index.html">Home</a> / <a href="../index.html#work">Selected work</a> / Continuity system</p>
       <header class="page-header">
-        <p class="page-kicker">Operational personal system</p>
-        <h1>Cross-Agent Continuity and Knowledge System</h1>
-        <p class="lede">A working system that preserves context across AI tools, devices, and work sessions without making any proprietary agent memory store the source of truth.</p>
+        <p class="page-kicker">Working knowledge system · Assistant development · Agent evaluation</p>
+        <h1>Continuity Assistant and Knowledge Systems</h1>
+        <p class="lede">From a working cross-agent knowledge system to a multi-user assistant: profile authority, Linux filesystem confinement, and tests of whether coding agents follow detailed engineering requirements.</p>
       </header>
 
       <dl class="meta-list">
-        <dt>Status</dt><dd>Operational for personal use</dd>
+        <dt>Status</dt><dd>Personal knowledge system operational; Continuity Assistant under development</dd>
         <dt>My role</dt><dd>System design, tool research, integration, governance rules, testing, failure diagnosis, and operational documentation</dd>
         <dt>Components</dt><dd>Conversation archives, local semantic retrieval, portable Markdown, mobile capture, synchronization, scheduled reporting, and bounded maintenance</dd>
         <dt>Source</dt><dd>Private personal infrastructure. Public writing describes the system and its design decisions.</dd>
@@ -74,7 +74,24 @@
       <p>The work began by comparing existing search, memory, retrieval, synchronization, and agent tools before adding custom components. The working system was assembled from reusable tools where they fit, with custom rules and integration only where a demonstrated gap remained.</p>
       <p>I tested retrieval boundaries, synchronization behavior, scheduled delivery, permissions, unattended maintenance, and recovery paths. Failures were preserved and diagnosed rather than folded into a clean success narrative.</p>
 
-      <h2>Testing the autonomy claim</h2><p>My later Continuity experiments ask whether the evaluated model family and workflow can reliably produce production-level code autonomously. I first observe baseline behavior, then introduce requirements and constraints, and inspect whether progressively more specific interventions change the result.</p><p>The practical finding was that I would not entrust that evaluated model family and workflow with autonomous production development. Extending the software is a separate development goal; the reliability finding does not depend on presenting an unfinished extension as a finished product.</p><h2>What the project demonstrates</h2>
+      <h2>Continuity Assistant: profile confinement in Hermes</h2>
+<p>Continuity Assistant extends the continuity work toward a multi-user assistant. A central development problem is giving each profile useful tools while confining its filesystem access to its assigned working tree. This is an operating-system and application-enforcement requirement, not an instruction asking the model to stay in a directory.</p>
+<p>The specification treats administrators and ordinary users as the same kind of profile with different privileges. A profile’s trusted identity must determine its authority; caller-supplied paths, environment variables, cached state, or a different entry point must not silently grant broader access.</p>
+<h2>What the implementation must actually do</h2>
+<ul>
+<li><strong>Preserve useful work inside the boundary.</strong> Navigation, search, file creation, editing, renaming, deletion, and supported execution must work inside the assigned tree. Disabling the tools or making everything read-only does not satisfy the requirement.</li>
+<li><strong>Enforce the boundary across execution paths.</strong> Native Hermes file operations, shells, interpreters, compiled programs, child processes, and background jobs must respect the same authority. Checking a path in one tool is not sufficient when another route can perform the operation.</li>
+<li><strong>Account for indirect access.</strong> Tests cover links, traversal, inherited and passed file descriptors, host-side helpers, service brokers, and profile selection or reuse. The relevant question is which real object an operation reaches, not whether a displayed path looks confined.</li>
+<li><strong>Distinguish enforcement from unrelated failure.</strong> An outside operation needs a meaningful positive control. A missing file, unavailable tool, ordinary permission denial, or broken fixture cannot be counted as proof that confinement worked.</li>
+<li><strong>Check both sides of the contract.</strong> Synthetic inside operations must produce their expected results, while independent checks confirm that outside targets and relevant metadata remain protected. Passing counts do not replace coverage of the actual requirement.</li>
+</ul>
+<h2>Evaluating whether detailed instructions govern the work</h2>
+<p>The development process also provides a direct test of agent reliability. I observe what the model does with an initial task, introduce explicit requirements and procedures, and then trace failures at finer granularity when those instructions do not govern the result.</p>
+<p>For example, “test filesystem confinement” becomes a per-tool, per-operation test contract: distinguish a shell builtin from an external executable; test an interpreter’s direct filesystem APIs rather than merely launching it; exercise read and write roles separately; establish valid controls; and inspect the real outside target after the attempt. Likewise, completing an inventory does not establish that the inventoried operations are confined.</p>
+<p>The project contract also keeps the original outcome intact across worker replacements and partial results. An agent cannot declare the phase complete by moving unmet requirements into a later phase. Independent acceptance requires execution of the written cases with expected and actual behavior, not a review of another agent’s completion summary.</p>
+<p>These interventions let me examine whether additional specification changes behavior, which instructions are repeatedly lost or reinterpreted, and how much human correction remains necessary. For the evaluated model family and workflow, the practical result is that I would not entrust it with autonomous production development. That finding is scoped to the evaluated system, not all coding tools.</p>
+<p><strong>Development status:</strong> The personal continuity system is operational. Continuity Assistant’s full profile-confinement outcome remains unaccepted; partial implementation and passing subsets are not presented as a completed security boundary.</p>
+<h2>What the project demonstrates</h2>
       <ul>
         <li>Knowledge-system and information-architecture design</li>
         <li>Semantic search and information retrieval</li>
