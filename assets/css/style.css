@@ -1,5 +1,5 @@
 /* ============================================================
-   Kris Leigh Miller — Applied AI Quality & Reliability
+   Miller Applied Systems: Software Development and AI Evaluation
    Paper-and-ink report aesthetic: warm paper, ink text,
    one verification-teal accent, serif display + mono labels.
    ============================================================ */
@@ -215,7 +215,7 @@ h3 { font-family: var(--font-display); font-size: var(--text-lg); margin-block-e
 .prose ul { list-style: none; margin-block: var(--space-5); }
 .prose li { position: relative; padding: var(--space-2) 0 var(--space-2) var(--space-6); border-top: 1px solid var(--color-divider); }
 .prose li:last-child { border-bottom: 1px solid var(--color-divider); }
-.prose li::before { content: "—"; position: absolute; left: 0; color: var(--color-primary); }
+.prose li::before { content: "•"; position: absolute; left: 0; color: var(--color-primary); }
 .meta-list { display: grid; grid-template-columns: 9rem 1fr; border-top: 1px solid var(--color-border); margin-block: var(--space-8); }
 .meta-list dt, .meta-list dd { padding: var(--space-3) 0; border-bottom: 1px solid var(--color-divider); }
 .meta-list dt { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; color: var(--color-text-muted); }
@@ -245,3 +245,8 @@ h3 { font-family: var(--font-display); font-size: var(--text-lg); margin-block-e
   .meta-list { grid-template-columns: 1fr; }
   .meta-list dt { border-bottom: 0; padding-bottom: 0; }
 }
+
+.hero .business-heading { max-width: none; }
+.business-tagline { max-width: 60ch; margin-block-end: var(--space-6); font-size: var(--text-lg); line-height: 1.5; color: var(--color-text); }
+.hero-byline { margin-block-start: var(--space-6); color: var(--color-text-muted); max-width: 62ch; }
+.contact-email { max-width: 100%; overflow-wrap: anywhere; }

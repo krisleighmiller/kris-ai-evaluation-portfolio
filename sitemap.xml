@@ -1,28 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://krisleighmiller.com/</loc>
+    <loc>https://millerappliedsystems.com/</loc>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://krisleighmiller.com/evaluation-services.html</loc>
+    <loc>https://millerappliedsystems.com/evaluation-services.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://krisleighmiller.com/about.html</loc>
+    <loc>https://millerappliedsystems.com/about.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://krisleighmiller.com/work/studio.html</loc>
+    <loc>https://millerappliedsystems.com/work/studio.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://krisleighmiller.com/work/continuity.html</loc>
+    <loc>https://millerappliedsystems.com/work/continuity.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url><loc>https://millerappliedsystems.com/work/voice-profile-studio.html</loc></url>
+  <url><loc>https://millerappliedsystems.com/work/semantic-retrieval.html</loc></url>
 </urlset>
